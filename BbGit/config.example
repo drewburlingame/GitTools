@@ -1,0 +1,5 @@
+﻿[profile-name default]
+AuthType = Basic
+Username = some-username
+AppPassword = some-app-password
+DefaultAccount = some-account

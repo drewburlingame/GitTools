@@ -1,0 +1,13 @@
+content: none
+source https://www.nuget.org/api/v2/
+redirects: on
+
+nuget AutoFac
+nuget Colorful.Console
+nuget commanddotnet
+nuget commanddotnet.ioc.autofac
+nuget Jil
+nuget LibGit2Sharp
+nuget MoreLinq
+nuget RestSharp 105.2.3
+nuget SharpBucket
