@@ -38,7 +38,7 @@ namespace BbGit.Git
             var defaultColor = Colors.DefaultColor;
             if (localRepo.Exists)
             {
-                // TODO: handle scenario where RepoConfig hasn't been created
+                // TODO: handle scenario where FolderConfig hasn't been created
                 Console.WriteLineFormatted(
                     "{0} already exists",
                     new Formatter(remoteRepo.Name, Colors.BranchColor),

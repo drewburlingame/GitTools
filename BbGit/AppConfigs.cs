@@ -13,26 +13,15 @@ namespace BbGit
 
         public static string InitConfigFile()
         {
-            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".bbgit");
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
-            path = Path.Combine(path, "config");
-            if (!File.Exists(path))
-            {
-                string result = GetSampleConfig();
-                File.WriteAllText(path, result);
-            }
-
-            return path;
+            var folderConfig = GetFolderConfig();
+            var sampleConfig = GetSampleConfig();
+            return folderConfig.AddConfig("config", sampleConfig);
         }
 
         public static AppConfigs Load()
         {
-            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".bbgit");
-            path = Path.Combine(path, "config");
-            var lines = File.ReadLines(path);
+            var folderConfig = GetFolderConfig();
+            var lines = folderConfig.GetConfig("config").Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
 
             var configs = new AppConfigs();
             AppConfig appConfig = null;
@@ -80,6 +69,12 @@ namespace BbGit
             }
 
             return configs;
+        }
+
+        private static FolderConfig GetFolderConfig()
+        {
+            var userFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            return new FolderConfig(userFolder);
         }
 
         private static string GetSampleConfig()

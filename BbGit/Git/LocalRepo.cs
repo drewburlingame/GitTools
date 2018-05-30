@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using BbGit.Framework;
 using LibGit2Sharp;
 
 namespace BbGit.Git
@@ -53,7 +54,7 @@ namespace BbGit.Git
 
     public class LocalRepo : IDisposable
     {
-        private readonly RepoConfig config;
+        private readonly FolderConfig config;
         private LazyLoadProxy<RemoteRepo> remoteRepo;
 
         private bool isDisposing;
@@ -100,7 +101,7 @@ namespace BbGit.Git
             GitRepo = gitRepo;
             Exists = Directory.Exists(FullPath);
             Name = new DirectoryInfo(FullPath).Name;
-            config = new RepoConfig(this);
+            config = new FolderConfig(FullPath);
             EvaluateIfExists();
 
             this.remoteRepo = new LazyLoadProxy<RemoteRepo>(() => config.GetJsonConfig<RemoteRepo>($"{Name}-remote"));
