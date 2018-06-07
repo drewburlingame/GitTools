@@ -65,11 +65,13 @@
     <Compile Include="Git\LocalRepo.cs" />
     <Compile Include="Git\GitService.cs" />
     <Compile Include="Git\GitUrls.cs" />
+    <Compile Include="Git\LocalReposConfig.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ConsoleApp\LocalRepoCommand.cs" />
     <Compile Include="ConsoleUtils\TableWriter.cs" />
     <Compile Include="ConsoleUtils\TableWriterFormat.cs" />
+    <Compile Include="BitBucket\RemoteReposConfig.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

@@ -169,6 +169,21 @@ namespace BbGit.ConsoleApp
             }
         }
 
+        [ApplicationMetadata(Description ="to clear a string config, set it to \" \"")]
+        public void SetConfig([Option(ShortName ="i", LongName = "ignoredRepoRegex")] string ignoredRepoRegex)
+        {
+            var config = GitService.GetLocalReposConfig();
+            config.IgnoredReposRegex = ignoredRepoRegex;
+            GitService.SaveLocalReposConfig(config);
+        }
+
+        public void ShowConfig([Option(ShortName = "i", LongName = "ignoredRepoRegex")] string ignoredRepoRegex)
+        {
+            var config = GitService.GetLocalReposConfig();
+            Console.Out.WriteLine("");
+            Console.Out.WriteLine($"ignoredRepoRegex = {config.IgnoredReposRegex}");
+        }
+
         private static string CountToString(int count)
         {
             return count == 0 ? "" : count.ToString();

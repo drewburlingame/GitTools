@@ -120,7 +120,7 @@ namespace BbGit.Git
 
         public void SaveConfigs()
         {
-            config.AddJsonConfig($"{Name}-remote", RemoteRepo);
+            config.SaveJsonConfig($"{Name}-remote", RemoteRepo);
         }
 
         public void ClearConfigs()

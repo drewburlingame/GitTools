@@ -37,18 +37,20 @@ namespace BbGit.Framework
             return File.ReadAllText(filePath);
         }
 
-        public string AddJsonConfig(string filename, object value)
+        public string SaveJsonConfig(string filename, object value)
         {
             filename = SetJsonExtension(filename);
             var json = JSON.Serialize(value, Options.PrettyPrintExcludeNullsIncludeInheritedUtc);
             return SaveConfig(filename, json);
         }
 
-        public T GetJsonConfig<T>(string filename)
+        public T GetJsonConfig<T>(string filename) where T : new()
         {
             filename = SetJsonExtension(filename);
             var json = GetConfig(filename);
-            return JSON.Deserialize<T>(json);
+            return string.IsNullOrWhiteSpace(json) 
+                ? new T()
+                : JSON.Deserialize<T>(json);
         }
 
         public void ClearAll()

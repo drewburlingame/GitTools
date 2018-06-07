@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;
 using Colorful;
@@ -14,13 +15,15 @@ namespace BbGit.Git
 {
     public class GitService
     {
+        private const string LocalReposConfigFileName = "localRepos";
+
         private readonly AppConfig appConfig;
         private readonly DirectoryResolver directoryResolver;
         private readonly PipedInput pipedInput;
+        private LocalReposConfig localReposConfig;
 
         private string CurrentDirectory => directoryResolver.CurrentDirectory;
-
-
+        
         private CredentialsHandler CredentialsProvider => (url, fromUrl, types) =>
             new UsernamePasswordCredentials {Username = appConfig.Username, Password = appConfig.AppPassword};
 
@@ -170,9 +173,12 @@ namespace BbGit.Git
 
         public IEnumerable<string> GetLocalRepoNames()
         {
-            return GetLocalDirectoryPaths().Select(p => new DirectoryInfo(p).Name);
+            return GetLocalDirectoryPaths()
+                .Select(p => new DirectoryInfo(p).Name)
+                .Where(IsNotIgnored)
+                .ToList();
         }
-
+        
         public DisposableColleciton<LocalRepo> GetLocalRepos(bool usePipedValuesIfAvailable = false)
         {
             var paths = usePipedValuesIfAvailable && this.pipedInput.HasValues
@@ -181,15 +187,25 @@ namespace BbGit.Git
 
             return paths
                 .Select(p => new LocalRepo(p))
-                .Where(r => r.IsGitDir)
+                .Where(r => r.IsGitDir && IsNotIgnored(r.Name))
                 .OrderBy(r => r.Name)
                 .ToDisposableColleciton();
-            
+
             // I haven't figured out why, but Libgit2Object.Dispose throws an 
             //   AccessViolationException - Attempted to read or write protected memory
             // It's only seen when the '-o' option is specified
             // That option only affects how a list is filtered, so I fear debugging will not be easy.
             // Disposing the collection seems to fix it.
+        }
+        public LocalReposConfig GetLocalReposConfig()
+        {
+            return localReposConfig
+                   ?? (localReposConfig = new FolderConfig(CurrentDirectory).GetJsonConfig<LocalReposConfig>(LocalReposConfigFileName));
+        }
+
+        public void SaveLocalReposConfig(LocalReposConfig config)
+        {
+            new FolderConfig(CurrentDirectory).SaveJsonConfig(LocalReposConfigFileName, config);
         }
 
         private IEnumerable<string> GetLocalDirectoryPaths()
@@ -202,6 +218,16 @@ namespace BbGit.Git
             {
                 throw new Exception($"{e.Message} {new {currentDirectory = CurrentDirectory}}", e);
             }
+        }
+
+        private bool IsNotIgnored(string repoName)
+        {
+            if (string.IsNullOrWhiteSpace(GetLocalReposConfig().IgnoredReposRegex))
+            {
+                return true;
+            }
+
+            return !Regex.IsMatch(repoName, GetLocalReposConfig().IgnoredReposRegex);
         }
     }
 }
