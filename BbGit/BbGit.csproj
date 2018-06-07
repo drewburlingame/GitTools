@@ -44,7 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConsoleApp\BitBucketRepoCommand.cs" />
-    <Compile Include="ConsoleApp\AppConfigCommand.cs" />
+    <Compile Include="ConsoleApp\GlobalConfigCommand.cs" />
     <Compile Include="ConsoleApp\RepoConfigCommand.cs" />
     <Compile Include="Framework\DisposableColleciton.cs" />
     <Compile Include="ConsoleUtils\Colors.cs" />

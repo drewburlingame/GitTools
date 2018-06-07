@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Text.RegularExpressions;
+using BbGit.BitBucket;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;
 using BbGit.Git;
@@ -10,7 +11,7 @@ using Console = System.Console;
 
 namespace BbGit.ConsoleApp
 {
-    [ApplicationMetadata(Name = "local", Description = "commands for managing local BitBucket repositories")]
+    [ApplicationMetadata(Name = "local", Description = "manage local BitBucket repositories")]
     public class LocalRepoCommand
     {
         [InjectProperty]
@@ -38,7 +39,11 @@ namespace BbGit.ConsoleApp
             [Option(ShortName = "s", Description = "with stashes")]
             bool withLocalStashes,
             [Option(ShortName = "o", Description = "where options:b,w,s are `OR` instead of `AND`")]
-            bool orLocalChecks)
+            bool orLocalChecks,
+            [Option(ShortName = "i", LongName = "includeIgnored", Description = "includes projects ignored in configuration")]
+            bool includeIgnored,
+            [Option(ShortName = "I", LongName = "onlyIgnored", Description = "lists only projects ignored in configuration")]
+            bool onlyIgnored)
         {
             using (var localRepos = GitService.GetLocalRepos())
             {
@@ -167,21 +172,6 @@ namespace BbGit.ConsoleApp
                     repositories.SafelyForEach(r => GitService.PullLatest(r, prune, branch), summarizeErrors: true);
                 }
             }
-        }
-
-        [ApplicationMetadata(Description ="to clear a string config, set it to \" \"")]
-        public void SetConfig([Option(ShortName ="i", LongName = "ignoredRepoRegex")] string ignoredRepoRegex)
-        {
-            var config = GitService.GetLocalReposConfig();
-            config.IgnoredReposRegex = ignoredRepoRegex;
-            GitService.SaveLocalReposConfig(config);
-        }
-
-        public void ShowConfig([Option(ShortName = "i", LongName = "ignoredRepoRegex")] string ignoredRepoRegex)
-        {
-            var config = GitService.GetLocalReposConfig();
-            Console.Out.WriteLine("");
-            Console.Out.WriteLine($"ignoredRepoRegex = {config.IgnoredReposRegex}");
         }
 
         private static string CountToString(int count)

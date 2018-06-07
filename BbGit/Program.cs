@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using Autofac;
+using BbGit.BitBucket;
 using BbGit.ConsoleApp;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;

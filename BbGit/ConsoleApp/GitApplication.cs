@@ -17,7 +17,7 @@ namespace BbGit.ConsoleApp
         public LocalRepoCommand LocalRepoCommand { get; set; }
 
         [SubCommand]
-        public AppConfigCommand AppConfigCommand { get; set; }
+        public GlobalConfigCommand GlobalConfigCommand { get; set; }
 
         [SubCommand]
         public RepoConfigCommand RepoConfigCommand { get; set; }

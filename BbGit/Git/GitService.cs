@@ -171,15 +171,22 @@ namespace BbGit.Git
             }
         }
 
-        public IEnumerable<string> GetLocalRepoNames()
+        public IEnumerable<string> GetLocalRepoNames(
+            bool includeIgnored = false,
+            bool onlyIgnored = false)
         {
             return GetLocalDirectoryPaths()
                 .Select(p => new DirectoryInfo(p).Name)
-                .Where(IsNotIgnored)
+                .Where(n => includeIgnored
+                            || (onlyIgnored && RepoIsIgnored(n))
+                            || !RepoIsIgnored(n))
                 .ToList();
         }
         
-        public DisposableColleciton<LocalRepo> GetLocalRepos(bool usePipedValuesIfAvailable = false)
+        public DisposableColleciton<LocalRepo> GetLocalRepos(
+            bool usePipedValuesIfAvailable = false,
+            bool includeIgnored = false,
+            bool onlyIgnored = false)
         {
             var paths = usePipedValuesIfAvailable && this.pipedInput.HasValues
                 ? this.pipedInput.Values.Select(n => Path.Combine(CurrentDirectory, n))
@@ -187,7 +194,10 @@ namespace BbGit.Git
 
             return paths
                 .Select(p => new LocalRepo(p))
-                .Where(r => r.IsGitDir && IsNotIgnored(r.Name))
+                .Where(r => r.IsGitDir
+                            && (includeIgnored
+                                || (onlyIgnored && RepoIsIgnored(r.Name))
+                                || !RepoIsIgnored(r.Name)))
                 .OrderBy(r => r.Name)
                 .ToDisposableColleciton();
 
@@ -220,14 +230,14 @@ namespace BbGit.Git
             }
         }
 
-        private bool IsNotIgnored(string repoName)
+        private bool RepoIsIgnored(string repoName)
         {
             if (string.IsNullOrWhiteSpace(GetLocalReposConfig().IgnoredReposRegex))
             {
                 return true;
             }
 
-            return !Regex.IsMatch(repoName, GetLocalReposConfig().IgnoredReposRegex);
+            return Regex.IsMatch(repoName, GetLocalReposConfig().IgnoredReposRegex);
         }
     }
 }

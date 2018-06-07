@@ -3,8 +3,8 @@ using CommandDotNet.Attributes;
 
 namespace BbGit.ConsoleApp
 {
-    [ApplicationMetadata(Name ="app-config", Description = "commands to configure BbGit")]
-    public class AppConfigCommand
+    [ApplicationMetadata(Name ="config-global", Description = "Global configurations for BbGit")]
+    public class GlobalConfigCommand
     {
         [ApplicationMetadata(Description = "Initializes BbGit configuration.  Creates ~/.bbgit folder with a sample config")]
         public void InitApp()

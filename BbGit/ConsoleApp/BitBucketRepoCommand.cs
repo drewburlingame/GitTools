@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using BbGit.BitBucket;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;
 using BbGit.Git;
@@ -11,7 +12,7 @@ using SharpBucket.V2.Pocos;
 
 namespace BbGit.ConsoleApp
 {
-    [ApplicationMetadata(Name = "bb", Description = "commands for querying repository info via BitBucket API")]
+    [ApplicationMetadata(Name = "bb", Description = "Query repository info via BitBucket API")]
     public class BitBucketRepoCommand
     {
         [InjectProperty]
@@ -23,14 +24,18 @@ namespace BbGit.ConsoleApp
         [ApplicationMetadata(Description = "Lists projects that contain repositories")]
         public void Projects(
             [Option(ShortName = "u", LongName = "uncloned", Description = "filters out repositories that have already been cloned.")]
-            bool uncloned)
+            bool uncloned,
+            [Option(ShortName = "i", LongName = "includeIgnored", Description = "includes projects ignored in configuration")]
+            bool includeIgnored,
+            [Option(ShortName = "I", LongName = "onlyIgnored", Description = "lists only projects ignored in configuration")]
+            bool onlyIgnored)
         {
-            var localRepoNames = GitService.GetLocalRepoNames().ToHashSet();
+            var localRepoNames = GitService.GetLocalRepoNames(includeIgnored, onlyIgnored).ToHashSet();
 
             var projects = new Dictionary<string, Tuple<string, List<Repository>>>();
 
             foreach (var repo in BbService
-                .GetRepos(usePipedValuesIfAvailable: true)
+                .GetRepos(usePipedValuesIfAvailable: true, includeIgnored: includeIgnored, onlyIgnored: onlyIgnored)
                 .Where(r => !uncloned || !localRepoNames.Contains(r.name)))
             {
                 var value = projects.GetValueOrAdd(repo.project.key,
@@ -60,11 +65,15 @@ namespace BbGit.ConsoleApp
             [Option(ShortName = "r", LongName = "repo", Description = "regex to filter repo name by")]
             string repoRegex,
             [Option(ShortName = "u", LongName = "uncloned", Description = "filters out repositories that have already been cloned.")]
-            bool uncloned
+            bool uncloned,
+            [Option(ShortName = "i", LongName = "includeIgnored", Description = "includes projects ignored in configuration")]
+            bool includeIgnored,
+            [Option(ShortName = "I", LongName = "onlyIgnored", Description = "lists only projects ignored in configuration")]
+            bool onlyIgnored
             )
         {
-            var localRepoNames = GitService.GetLocalRepoNames().ToHashSet();
-            var bbRepos = BbService.GetRepos(projects);
+            var localRepoNames = GitService.GetLocalRepoNames(includeIgnored, onlyIgnored).ToHashSet();
+            var bbRepos = BbService.GetRepos(projects, includeIgnored: includeIgnored, onlyIgnored: onlyIgnored);
 
             if (repoRegex != null)
             {

@@ -12,7 +12,4 @@
 * integration tests
   * create 3 BB repos w/ 2 projects in free personal account
 * parent folder .bbgit configs
-  * projects to always ignore:  e.g. deprecated, obsolete
-  * repositories to always ignore
-  * include options to show ignored - include-ignored, only-ignored
   * useSsh
