@@ -11,3 +11,4 @@ nuget LibGit2Sharp
 nuget MoreLinq
 nuget RestSharp 105.2.3
 nuget SharpBucket
+nuget SharpConfig

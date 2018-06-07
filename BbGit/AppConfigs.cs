@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using BbGit.Framework;
+using SharpConfig;
 
 namespace BbGit
 {
@@ -15,60 +16,38 @@ namespace BbGit
         {
             var folderConfig = GetFolderConfig();
             var sampleConfig = GetSampleConfig();
-            return folderConfig.AddConfig("config", sampleConfig);
+            return folderConfig.SaveConfig("config", sampleConfig);
         }
 
         public static AppConfigs Load()
         {
+            AppConfigs appConfigs = new AppConfigs();
+
             var folderConfig = GetFolderConfig();
-            var lines = folderConfig.GetConfig("config").Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+            var configuration = Configuration.LoadFromString(folderConfig.GetConfig("config"));
 
-            var configs = new AppConfigs();
-            AppConfig appConfig = null;
-
-            foreach (var line in lines.Where(l => !string.IsNullOrWhiteSpace(l)))
+            foreach (var config in configuration)
             {
-                if (line.StartsWith("["))
+                var appConfig = config.ToObject<AppConfig>();
+
+                var configName = config.Name;
+                bool isDefault = false;
+                var nameSegments = configName.Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+
+                if (nameSegments.Length > 1)
                 {
-                    appConfig = new AppConfig();
-                    var headerSegments = line.Substring(1, line.Length - 2)
-                        .Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
-                    configs.ConfigsByName[headerSegments[0]] = appConfig;
-
-                    if (headerSegments.Length > 1 &&
-                        headerSegments[0].Equals("default", StringComparison.OrdinalIgnoreCase))
-                    {
-                        configs.Default = appConfig;
-                    }
-
-                    if (configs.Default == null)
-                    {
-                        configs.Default = appConfig;
-                    }
+                    configName = nameSegments[0];
+                    isDefault = nameSegments.Contains("default", StringComparer.OrdinalIgnoreCase);
                 }
 
-                var segments = line.Split(" = ".ToCharArray());
-                switch (segments[0].ToLower())
+                appConfigs.ConfigsByName[configName] = appConfig;
+                if (isDefault)
                 {
-                    case "authtype":
-                        appConfig.AuthType = segments[3].ToEnum<AppConfig.AuthTypes>();
-                        break;
-                    case "username":
-                        appConfig.Username = segments[3];
-                        break;
-                    case "apppassword":
-                        appConfig.AppPassword = segments[3];
-                        break;
-                    case "defaultaccount":
-                        appConfig.DefaultAccount = segments[3];
-                        break;
-                    case "setorigintossh":
-                        appConfig.SetOriginToSsh = bool.Parse(segments[3]);
-                        break;
+                    appConfigs.Default = appConfig;
                 }
             }
 
-            return configs;
+            return appConfigs;
         }
 
         private static FolderConfig GetFolderConfig()

@@ -15,7 +15,7 @@ namespace BbGit.Framework
             this.bbGitPath = Path.Combine(path, ".bbgit");
         }
 
-        public string AddConfig(string filename, string contents)
+        public string SaveConfig(string filename, string contents)
         {
             EnsureDirectoryExists();
 
@@ -41,7 +41,7 @@ namespace BbGit.Framework
         {
             filename = SetJsonExtension(filename);
             var json = JSON.Serialize(value, Options.PrettyPrintExcludeNullsIncludeInheritedUtc);
-            return AddConfig(filename, json);
+            return SaveConfig(filename, json);
         }
 
         public T GetJsonConfig<T>(string filename)
