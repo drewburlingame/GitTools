@@ -39,7 +39,7 @@ namespace BbGit.ConsoleApp
                 GitService.SaveLocalReposConfig(config);
             }
 
-            if (ignoreLocalReposRegex != null || ignoredRemoteProjectsRegex != null)
+            if (ignoredRemoteReposRegex != null || ignoredRemoteProjectsRegex != null)
             {
                 var config = BbService.GetRemoteReposConfig();
                 if (ignoredRemoteReposRegex != null)
