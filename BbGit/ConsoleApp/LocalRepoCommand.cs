@@ -182,6 +182,7 @@ namespace BbGit.ConsoleApp
             [Option(ShortName = "i", LongName = "install")] bool install,
             [Option(ShortName = "r", LongName = "restore")] bool restore,
             [Option(ShortName = "c", LongName = "clean")] bool cleanPackages,
+            [Option(ShortName = "b", LongName = "bootstrapper")] bool forceBootstapper,
             [Option(ShortName = "d", LongName = "dryrun")] bool dryrun)
         {
             // TODO: initialize only: only where packages is empty
@@ -217,10 +218,14 @@ namespace BbGit.ConsoleApp
                         }
                     }
 
-                    Console.Out.WriteLine($"running paket.bootstrapper.exe");
-                    if (!dryrun)
+                    if (forceBootstapper || !File.Exists(Path.Combine(paketDir, "paket.exe")))
                     {
-                        RunProcessAndWait(new ProcessStartInfo("paket.bootstrapper.exe") {WorkingDirectory = paketDir});
+                        Console.Out.WriteLine($"running paket.bootstrapper.exe");
+                        if (!dryrun)
+                        {
+                            RunProcessAndWait(
+                                new ProcessStartInfo("paket.bootstrapper.exe") {WorkingDirectory = paketDir});
+                        }
                     }
 
                     if (install)
