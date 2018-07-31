@@ -1,13 +1,16 @@
 ﻿using System;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using BbGit.BitBucket;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;
 using BbGit.Git;
+using Colorful;
 using CommandDotNet.Attributes;
 using MoreLinq;
-using Console = System.Console;
+using Console = Colorful.Console;
 
 namespace BbGit.ConsoleApp
 {
@@ -172,6 +175,83 @@ namespace BbGit.ConsoleApp
                     repositories.SafelyForEach(r => GitService.PullLatest(r, prune, branch), summarizeErrors: true);
                 }
             }
+        }
+
+        [ApplicationMetadata(Description = "Calls paket restore on all ")]
+        public void Paket(
+            [Option(ShortName = "i", LongName = "install")] bool install,
+            [Option(ShortName = "r", LongName = "restore")] bool restore,
+            [Option(ShortName = "c", LongName = "clean")] bool cleanPackages,
+            [Option(ShortName = "d", LongName = "dryrun")] bool dryrun)
+        {
+            // TODO: initialize only: only where packages is empty
+
+            if (dryrun)
+            {
+                Console.WriteLineFormatted(
+                    $"Running paket" +
+                    $"{(dryrun ? " --dryrun" : "")}" +
+                    $"{(cleanPackages ? " --clean" : "")}" +
+                    $"{(install ? " --install" : "")}" +
+                    $"{(restore && !install ? " --restore" : "")}",
+                    Colors.DefaultColor);
+            }
+
+            using (var repositories = GitService.GetLocalRepos(usePipedValuesIfAvailable: true))
+            {
+                repositories.SafelyForEach(r =>
+                {
+                    var paketDir = Path.Combine(r.FullPath, ".paket");
+                    if (!Directory.Exists(paketDir))
+                    {
+                        Console.Out.WriteLine($"skipping. no .paket directory");
+                        return;
+                    }
+
+                    if (cleanPackages)
+                    {
+                        Console.Out.WriteLine($"cleaning packages");
+                        if (!dryrun)
+                        {
+                            Directory.Delete(Path.Combine(r.FullPath, "packages"), true);
+                        }
+                    }
+
+                    Console.Out.WriteLine($"running paket.bootstrapper.exe");
+                    if (!dryrun)
+                    {
+                        RunProcessAndWait(new ProcessStartInfo("paket.bootstrapper.exe") {WorkingDirectory = paketDir});
+                    }
+
+                    if (install)
+                    {
+                        Console.Out.WriteLine($"running paket install");
+                        if (!dryrun)
+                        {
+                            RunProcessAndWait(
+                                new ProcessStartInfo("paket.exe", "install") {WorkingDirectory = paketDir},
+                                maxSecondsToWait: 120);
+                        }
+                    }
+                    else if (restore)
+                    {
+                        Console.Out.WriteLine($"running paket restore");
+                        if (!dryrun)
+                        {
+                            RunProcessAndWait(
+                                new ProcessStartInfo("paket.exe", "restore") {WorkingDirectory = paketDir},
+                                maxSecondsToWait: 60);
+                        }
+                    }
+                }, summarizeErrors: true);
+            }
+        }
+
+        private static void RunProcessAndWait(ProcessStartInfo startInfo, int maxSecondsToWait = 30)
+        {
+            var processStartInfo = startInfo;
+            var process = Process.Start(processStartInfo);
+            process?.WaitForExit(1000 * maxSecondsToWait);
         }
 
         private static string CountToString(int count)
