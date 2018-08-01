@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using BbGit.ConsoleUtils;
+using BbGit.Git;
 using Colorful;
 using MoreLinq;
-using Console = System.Console;
+using Console = Colorful.Console;
 
 namespace BbGit.Framework
 {
@@ -32,7 +33,17 @@ namespace BbGit.Framework
             return items.Length > index ? items[index] : default(T);
         }
 
-        public static void SafelyForEach<T>(this IEnumerable<T> values, Action<T> action, int allowedErrorsInARow = 2, bool summarizeErrors = false)
+        public static void SafelyForEach(this IEnumerable<RemoteRepo> values, Action<RemoteRepo> action, int allowedErrorsInARow = 2, bool summarizeErrors = false)
+        {
+            values.SafelyForEach(r => r.Name, action, allowedErrorsInARow, summarizeErrors);
+        }
+
+        public static void SafelyForEach(this IEnumerable<LocalRepo> values, Action<LocalRepo> action, int allowedErrorsInARow = 2, bool summarizeErrors = false)
+        {
+            values.SafelyForEach(r => r.Name, action, allowedErrorsInARow, summarizeErrors);
+        }
+
+        public static void SafelyForEach<T>(this IEnumerable<T> values, Func<T, string> getName, Action<T> action, int allowedErrorsInARow = 2, bool summarizeErrors = false)
         {
             var items = values as ICollection<T> ?? values.ToList();
 
@@ -60,7 +71,10 @@ namespace BbGit.Framework
                     errors.Add((r, i + 1, e));
                 }
 
-                Console.Out.WriteLine($"{i + 1} of {items.Count}");
+                Console.WriteLineFormatted(
+                    $"{i + 1} of {items.Count} - " + "{0}",
+                    new Formatter(getName(r), Colors.BranchColor),
+                    Colors.DefaultColor);
             });
 
             if (summarizeErrors && errors.Count > 0)

@@ -10,7 +10,9 @@ using SharpBucket.V2.Pocos;
 
 namespace BbGit.ConsoleApp
 {
-    [ApplicationMetadata(Name = "config-repo", Description = "Repo configurations in the .bbgit folder")]
+    [ApplicationMetadata(Name = "config-repo", 
+        Description = "Configurations for repos within the same parent folder. " +
+                      "Creates {currentfolder}/.bbgit where currentFolder contains the repos.")]
     public class RepoConfigCommand
     {
         [InjectProperty]
@@ -77,6 +79,7 @@ namespace BbGit.ConsoleApp
                 var joinedRepos = LeftJoinRepos(localRepos, remoteRepos).Where(j => j.remote != null);
 
                 joinedRepos.SafelyForEach(
+                    j => j.local.Name,
                     j => GitService.UpdateRepoConfigs(new LocalRepo(j.local) { RemoteRepo = new RemoteRepo(j.remote) }),
                     summarizeErrors: true);
             }

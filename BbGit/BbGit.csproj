@@ -49,6 +49,7 @@
     <Compile Include="Framework\DisposableColleciton.cs" />
     <Compile Include="ConsoleUtils\Colors.cs" />
     <Compile Include="Framework\FolderConfig.cs" />
+    <Compile Include="Git\LazyLoadProxy.cs" />
     <Compile Include="Git\LocalRepoExtensions.cs" />
     <Compile Include="Framework\PipedInput.cs" />
     <Compile Include="Git\RemoteRepo.cs" />

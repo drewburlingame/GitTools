@@ -3,10 +3,13 @@ using CommandDotNet.Attributes;
 
 namespace BbGit.ConsoleApp
 {
-    [ApplicationMetadata(Name ="config-global", Description = "Global configurations for BbGit")]
+    [ApplicationMetadata(Name ="config-global", Description = "Global configurations for BbGit. e.g. AWS account info")]
     public class GlobalConfigCommand
     {
-        [ApplicationMetadata(Description = "Initializes BbGit configuration.  Creates ~/.bbgit folder with a sample config")]
+        [ApplicationMetadata(
+            Description = "Initializes BbGit configuration. " +
+                          "Creates ~/.bbgit folder with a sample config. " +
+                          "note: config is stored in your user directory.")]
         public void InitApp()
         {
             var configFilePath = AppConfigs.InitConfigFile();
