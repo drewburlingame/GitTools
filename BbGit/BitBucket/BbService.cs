@@ -12,32 +12,36 @@ namespace BbGit.BitBucket
     public class BbService
     {
         private const string RemoteReposConfigFileName = "remoteRepos";
-
-        private readonly PipedInput pipedInput;
-        private readonly DirectoryResolver directoryResolver;
-        private readonly SharpBucketV2 bbApi;
         private readonly AppConfig appConfig;
+        private readonly SharpBucketV2 bbApi;
+        private readonly DirectoryResolver directoryResolver;
+        private readonly PipedInput pipedInput;
+
         private RemoteReposConfig remoteReposConfig;
 
-        private string CurrentDirectory => directoryResolver.CurrentDirectory;
+        private string CurrentDirectory => this.directoryResolver.CurrentDirectory;
 
-        public BbService(SharpBucketV2 bbApi, AppConfig appConfig, PipedInput pipedInput, DirectoryResolver directoryResolver)
+        public BbService(
+            SharpBucketV2 bbApi,
+            AppConfig appConfig,
+            PipedInput pipedInput,
+            DirectoryResolver directoryResolver)
         {
-            this.pipedInput = pipedInput;
-            this.directoryResolver = directoryResolver;
             this.bbApi = bbApi;
             this.appConfig = appConfig;
+            this.pipedInput = pipedInput;
+            this.directoryResolver = directoryResolver;
         }
 
         public IEnumerable<Repository> GetRepos(
-            string projects = null, 
-            bool usePipedValuesIfAvailable = false, 
+            string projects = null,
+            bool usePipedValuesIfAvailable = false,
             bool includeIgnored = false,
             bool onlyIgnored = false)
         {
-            var repositories = bbApi.RepositoriesEndPoint()
-                .ListRepositories(appConfig.DefaultAccount)
-                .Where(repo => Include(includeIgnored, onlyIgnored, repo))
+            var repositories = this.bbApi.RepositoriesEndPoint()
+                .ListRepositories(this.appConfig.DefaultAccount)
+                .Where(repo => this.Include(includeIgnored, onlyIgnored, repo))
                 .OrderBy(r => r.name)
                 .AsEnumerable();
 
@@ -58,13 +62,15 @@ namespace BbGit.BitBucket
 
         public RemoteReposConfig GetRemoteReposConfig()
         {
-            return remoteReposConfig
-                   ?? (remoteReposConfig = new FolderConfig(CurrentDirectory).GetJsonConfig<RemoteReposConfig>(RemoteReposConfigFileName));
+            return this.remoteReposConfig
+                   ?? (this.remoteReposConfig =
+                       new FolderConfig(this.CurrentDirectory).GetJsonConfig<RemoteReposConfig>(
+                           RemoteReposConfigFileName));
         }
 
         public void SaveRemoteReposConfig(RemoteReposConfig config)
         {
-            new FolderConfig(CurrentDirectory).SaveJsonConfig(RemoteReposConfigFileName, config);
+            new FolderConfig(this.CurrentDirectory).SaveJsonConfig(RemoteReposConfigFileName, config);
         }
 
         private bool Include(bool includeIgnored, bool onlyIgnored, Repository repo)
@@ -75,17 +81,18 @@ namespace BbGit.BitBucket
                     $"{nameof(includeIgnored)} && {nameof(onlyIgnored)} are mutually exclusive.  Only one of them can be true");
             }
 
-            var reposConfig = GetRemoteReposConfig();
+            var reposConfig = this.GetRemoteReposConfig();
             var ignoreRepoRegex = reposConfig.IgnoredReposRegex;
             var ignoreProjRegex = reposConfig.IgnoredProjectsRegex;
 
             var hasIgnoreRepoRegex = !string.IsNullOrWhiteSpace(ignoreRepoRegex);
             var hasIgnoreProjRegex = !string.IsNullOrWhiteSpace(ignoreProjRegex);
 
-            if(!hasIgnoreRepoRegex && !hasIgnoreProjRegex)
+            if (!hasIgnoreRepoRegex && !hasIgnoreProjRegex)
             {
                 return true;
             }
+
             if (includeIgnored) // include all
             {
                 return true;
@@ -94,14 +101,14 @@ namespace BbGit.BitBucket
             var repoIsIgnored = hasIgnoreRepoRegex && Regex.IsMatch(repo.name, ignoreRepoRegex);
             var projIsIgnored = hasIgnoreProjRegex && Regex.IsMatch(repo.project.key, ignoreProjRegex);
 
-            return onlyIgnored 
-                ? repoIsIgnored || projIsIgnored 
+            return onlyIgnored
+                ? repoIsIgnored || projIsIgnored
                 : !repoIsIgnored && !projIsIgnored;
         }
 
         private bool RepoIsIgnored(Repository repo)
         {
-            var ignoredReposRegex = GetRemoteReposConfig().IgnoredReposRegex;
+            var ignoredReposRegex = this.GetRemoteReposConfig().IgnoredReposRegex;
             if (string.IsNullOrWhiteSpace(ignoredReposRegex))
             {
                 return true;
@@ -112,7 +119,7 @@ namespace BbGit.BitBucket
 
         private bool ProjectIsIgnored(Repository repo)
         {
-            var ignoredProjectsRegex = GetRemoteReposConfig().IgnoredProjectsRegex;
+            var ignoredProjectsRegex = this.GetRemoteReposConfig().IgnoredProjectsRegex;
             if (string.IsNullOrWhiteSpace(ignoredProjectsRegex))
             {
                 return true;

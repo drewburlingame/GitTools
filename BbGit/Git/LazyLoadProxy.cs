@@ -4,18 +4,8 @@ namespace BbGit.Git
 {
     public class LazyLoadProxy<T>
     {
-        private Func<T> valueProvider;
-
         private T value;
-
-        public static implicit operator T(LazyLoadProxy<T> lazy)
-        {
-            return lazy.Value;
-        }
-        public static implicit operator LazyLoadProxy<T>(T value)
-        {
-            return new LazyLoadProxy<T> {Value = value};
-        }
+        private Func<T> valueProvider;
 
         public T Value
         {
@@ -45,6 +35,16 @@ namespace BbGit.Git
         public LazyLoadProxy(Func<T> valueProvider)
         {
             this.valueProvider = valueProvider;
+        }
+
+        public static implicit operator T(LazyLoadProxy<T> lazy)
+        {
+            return lazy.Value;
+        }
+
+        public static implicit operator LazyLoadProxy<T>(T value)
+        {
+            return new LazyLoadProxy<T> {Value = value};
         }
     }
 }

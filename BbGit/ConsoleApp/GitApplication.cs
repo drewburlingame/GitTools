@@ -6,7 +6,6 @@ namespace BbGit.ConsoleApp
     [ApplicationMetadata(Name = "BbGit", Description = "GitTools for BitBucket")]
     public class GitApplication
     {
-
         private readonly string targetDir;
         private DirectoryResolver directoryResolver;
 
@@ -25,16 +24,20 @@ namespace BbGit.ConsoleApp
         [InjectProperty]
         public DirectoryResolver DirectoryResolver
         {
-            get => directoryResolver;
+            get => this.directoryResolver;
             set
             {
-                directoryResolver = value;
-                directoryResolver.SetCurrentDirectory(targetDir);
+                this.directoryResolver = value;
+                this.directoryResolver.SetCurrentDirectory(this.targetDir);
             }
         }
 
         public GitApplication(
-            [Option(ShortName = "d", LongName = "target-dir", Description = "specify a directory to use instead of the console's current working directory. useful for test automation")]
+            [Option(
+                ShortName = "d",
+                LongName = "target-dir",
+                Description = "specify a directory to use instead of the console's current working directory. " +
+                              "useful for test automation")]
             string targetDir)
         {
             this.targetDir = targetDir;

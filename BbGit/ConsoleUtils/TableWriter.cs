@@ -1,25 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
 using System.Linq;
 using BbGit.Framework;
-using Colorful;
 using MoreLinq;
-using Console = System.Console;
 
 namespace BbGit.ConsoleUtils
 {
     public static class TableWriter
     {
         /// <summary></summary>
-        public static void WriteTable(this IEnumerable<string> rows, string[] headers = null, TableWriterFormat format = null, bool printRowCount = true)
+        public static void WriteTable(
+            this IEnumerable<string> rows,
+            string[] headers = null,
+            TableWriterFormat format = null,
+            bool printRowCount = true)
         {
-            rows.Select(cell => new[] { cell }).WriteTable(headers, format, printRowCount);
+            rows.Select(cell => new[] {cell}).WriteTable(headers, format, printRowCount);
         }
 
         /// <summary></summary>
-        public static void WriteTable(this IEnumerable<string[]> rows, string[] headers = null, TableWriterFormat format = null, bool printRowCount = true)
+        public static void WriteTable(
+            this IEnumerable<string[]> rows,
+            string[] headers = null,
+            TableWriterFormat format = null,
+            bool printRowCount = true)
         {
             format = format == null
                 ? new TableWriterFormat()
@@ -44,7 +48,7 @@ namespace BbGit.ConsoleUtils
                 return;
             }
 
-            int rowCount = 0;
+            var rowCount = 0;
             foreach (var row in safeRows)
             {
                 rowCount++;
@@ -109,8 +113,11 @@ namespace BbGit.ConsoleUtils
             return columnCount;
         }
 
-        private static void EnsureColumnWidthAccomodatesHeadersAndRows(string[] headers, TableWriterFormat format,
-            int columnCount, ICollection<string[]> safeRows)
+        private static void EnsureColumnWidthAccomodatesHeadersAndRows(
+            string[] headers,
+            TableWriterFormat format,
+            int columnCount,
+            ICollection<string[]> safeRows)
         {
             if (format.ColumnWidths.IsNullOrEmpty())
             {

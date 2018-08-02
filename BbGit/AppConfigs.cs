@@ -21,7 +21,7 @@ namespace BbGit
 
         public static AppConfigs Load()
         {
-            AppConfigs appConfigs = new AppConfigs();
+            var appConfigs = new AppConfigs();
 
             var folderConfig = GetFolderConfig();
             var configuration = Configuration.LoadFromString(folderConfig.GetConfig("config"));
@@ -31,7 +31,7 @@ namespace BbGit
                 var appConfig = config.ToObject<AppConfig>();
 
                 var configName = config.Name;
-                bool isDefault = false;
+                var isDefault = false;
                 var nameSegments = configName.Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
 
                 if (nameSegments.Length > 1)
@@ -59,9 +59,9 @@ namespace BbGit
         private static string GetSampleConfig()
         {
             string result;
-            using (Stream stream = typeof(AppConfigs).Assembly.GetManifestResourceStream("BbGit.config.example"))
+            using (var stream = typeof(AppConfigs).Assembly.GetManifestResourceStream("BbGit.config.example"))
             {
-                using (StreamReader reader = new StreamReader(stream))
+                using (var reader = new StreamReader(stream))
                 {
                     result = reader.ReadToEnd();
                 }

@@ -9,21 +9,20 @@ namespace BbGit.Git
         public string ProjectKey { get; set; }
         public string ProjectName { get; set; }
         public string HttpsUrl { get; set; }
-        public string SshUrl { get; set;  }
+        public string SshUrl { get; set; }
 
         /// <summary>for serialization</summary>
         public RemoteRepo()
         {
-
         }
 
         public RemoteRepo(Repository repository)
         {
-            Name = repository.name;
-            ProjectKey = repository.project.key;
-            ProjectName = repository.project.name;
-            HttpsUrl = repository.links.clone.FirstOrDefault(c => c.name == "https")?.href;
-            SshUrl = repository.links.clone.FirstOrDefault(c => c.name == "ssh")?.href;
+            this.Name = repository.name;
+            this.ProjectKey = repository.project.key;
+            this.ProjectName = repository.project.name;
+            this.HttpsUrl = repository.links.clone.FirstOrDefault(c => c.name == "https")?.href;
+            this.SshUrl = repository.links.clone.FirstOrDefault(c => c.name == "ssh")?.href;
         }
     }
 }

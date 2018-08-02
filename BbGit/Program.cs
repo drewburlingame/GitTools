@@ -30,12 +30,13 @@ namespace BbGit
                     {
                         Thread.Sleep(1000);
                     }
+
                     args = args.Take(args.Length - 1).ToArray();
                 }
 
 
                 var containerBuilder = new ContainerBuilder();
-                
+
                 var configs = AppConfigs.Load();
                 var config = configs.Default;
 

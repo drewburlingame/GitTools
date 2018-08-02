@@ -22,10 +22,10 @@ namespace BbGit.Git
         private readonly PipedInput pipedInput;
         private LocalReposConfig localReposConfig;
 
-        private string CurrentDirectory => directoryResolver.CurrentDirectory;
-        
+        private string CurrentDirectory => this.directoryResolver.CurrentDirectory;
+
         private CredentialsHandler CredentialsProvider => (url, fromUrl, types) =>
-            new UsernamePasswordCredentials {Username = appConfig.Username, Password = appConfig.AppPassword};
+            new UsernamePasswordCredentials {Username = this.appConfig.Username, Password = this.appConfig.AppPassword};
 
         public GitService(AppConfig appConfig, DirectoryResolver directoryResolver, PipedInput pipedInput)
         {
@@ -36,7 +36,8 @@ namespace BbGit.Git
 
         public void CloneRepo(RemoteRepo remoteRepo)
         {
-            var localRepo = new LocalRepo(Path.Combine(CurrentDirectory, remoteRepo.Name)) {RemoteRepo = remoteRepo};
+            var localRepo =
+                new LocalRepo(Path.Combine(this.CurrentDirectory, remoteRepo.Name)) {RemoteRepo = remoteRepo};
 
             var defaultColor = Colors.DefaultColor;
             if (localRepo.Exists)
@@ -60,7 +61,7 @@ namespace BbGit.Git
                 localRepo.FullPath,
                 new CloneOptions
                 {
-                    CredentialsProvider = CredentialsProvider
+                    CredentialsProvider = this.CredentialsProvider
                 });
 
             localRepo.EvaluateIfExists();
@@ -86,6 +87,7 @@ namespace BbGit.Git
                 {
                     GitUrls.SetOriginToSsh(localRepo);
                 }
+
                 localRepo.SaveConfigs();
             }
         }
@@ -102,7 +104,7 @@ namespace BbGit.Git
 
         public void PullLatest(LocalRepo localRepo, bool prune, string branchName = "master")
         {
-            Repository repo = localRepo.GitRepo;
+            var repo = localRepo.GitRepo;
 
             var gitDir = new LocalRepo(repo);
             var repoColor = Colors.RepoColor;
@@ -138,7 +140,7 @@ namespace BbGit.Git
                     {
                         FetchOptions = new FetchOptions
                         {
-                            CredentialsProvider = CredentialsProvider,
+                            CredentialsProvider = this.CredentialsProvider,
                             Prune = prune,
                             OnProgress = output =>
                             {
@@ -175,29 +177,29 @@ namespace BbGit.Git
             bool includeIgnored = false,
             bool onlyIgnored = false)
         {
-            return GetLocalDirectoryPaths()
+            return this.GetLocalDirectoryPaths()
                 .Select(p => new DirectoryInfo(p).Name)
                 .Where(n => includeIgnored
-                            || (onlyIgnored && RepoIsIgnored(n))
-                            || !RepoIsIgnored(n))
+                            || onlyIgnored && this.RepoIsIgnored(n)
+                            || !this.RepoIsIgnored(n))
                 .ToList();
         }
-        
+
         public DisposableColleciton<LocalRepo> GetLocalRepos(
             bool usePipedValuesIfAvailable = false,
             bool includeIgnored = false,
             bool onlyIgnored = false)
         {
             var paths = usePipedValuesIfAvailable && this.pipedInput.HasValues
-                ? this.pipedInput.Values.Select(n => Path.Combine(CurrentDirectory, n))
-                : GetLocalDirectoryPaths();
+                ? this.pipedInput.Values.Select(n => Path.Combine(this.CurrentDirectory, n))
+                : this.GetLocalDirectoryPaths();
 
             return paths
                 .Select(p => new LocalRepo(p))
                 .Where(r => r.IsGitDir
                             && (includeIgnored
-                                || (onlyIgnored && RepoIsIgnored(r.Name))
-                                || !RepoIsIgnored(r.Name)))
+                                || onlyIgnored && this.RepoIsIgnored(r.Name)
+                                || !this.RepoIsIgnored(r.Name)))
                 .OrderBy(r => r.Name)
                 .ToDisposableColleciton();
 
@@ -207,37 +209,40 @@ namespace BbGit.Git
             // That option only affects how a list is filtered, so I fear debugging will not be easy.
             // Disposing the collection seems to fix it.
         }
+
         public LocalReposConfig GetLocalReposConfig()
         {
-            return localReposConfig
-                   ?? (localReposConfig = new FolderConfig(CurrentDirectory).GetJsonConfig<LocalReposConfig>(LocalReposConfigFileName));
+            return this.localReposConfig
+                   ?? (this.localReposConfig =
+                       new FolderConfig(this.CurrentDirectory).GetJsonConfig<LocalReposConfig>(LocalReposConfigFileName)
+                   );
         }
 
         public void SaveLocalReposConfig(LocalReposConfig config)
         {
-            new FolderConfig(CurrentDirectory).SaveJsonConfig(LocalReposConfigFileName, config);
+            new FolderConfig(this.CurrentDirectory).SaveJsonConfig(LocalReposConfigFileName, config);
         }
 
         private IEnumerable<string> GetLocalDirectoryPaths()
         {
             try
             {
-                return Directory.GetDirectories(CurrentDirectory);
+                return Directory.GetDirectories(this.CurrentDirectory);
             }
             catch (Exception e)
             {
-                throw new Exception($"{e.Message} {new {currentDirectory = CurrentDirectory}}", e);
+                throw new Exception($"{e.Message} {new {currentDirectory = this.CurrentDirectory}}", e);
             }
         }
 
         private bool RepoIsIgnored(string repoName)
         {
-            if (string.IsNullOrWhiteSpace(GetLocalReposConfig().IgnoredReposRegex))
+            if (string.IsNullOrWhiteSpace(this.GetLocalReposConfig().IgnoredReposRegex))
             {
                 return true;
             }
 
-            return Regex.IsMatch(repoName, GetLocalReposConfig().IgnoredReposRegex);
+            return Regex.IsMatch(repoName, this.GetLocalReposConfig().IgnoredReposRegex);
         }
     }
 }

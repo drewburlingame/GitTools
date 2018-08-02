@@ -33,17 +33,30 @@ namespace BbGit.Framework
             return items.Length > index ? items[index] : default(T);
         }
 
-        public static void SafelyForEach(this IEnumerable<RemoteRepo> values, Action<RemoteRepo> action, int allowedErrorsInARow = 2, bool summarizeErrors = false)
+        public static void SafelyForEach(
+            this IEnumerable<RemoteRepo> values,
+            Action<RemoteRepo> action,
+            int allowedErrorsInARow = 2,
+            bool summarizeErrors = false)
         {
             values.SafelyForEach(r => r.Name, action, allowedErrorsInARow, summarizeErrors);
         }
 
-        public static void SafelyForEach(this IEnumerable<LocalRepo> values, Action<LocalRepo> action, int allowedErrorsInARow = 2, bool summarizeErrors = false)
+        public static void SafelyForEach(
+            this IEnumerable<LocalRepo> values,
+            Action<LocalRepo> action,
+            int allowedErrorsInARow = 2,
+            bool summarizeErrors = false)
         {
             values.SafelyForEach(r => r.Name, action, allowedErrorsInARow, summarizeErrors);
         }
 
-        public static void SafelyForEach<T>(this IEnumerable<T> values, Func<T, string> getName, Action<T> action, int allowedErrorsInARow = 2, bool summarizeErrors = false)
+        public static void SafelyForEach<T>(
+            this IEnumerable<T> values,
+            Func<T, string> getName,
+            Action<T> action,
+            int allowedErrorsInARow = 2,
+            bool summarizeErrors = false)
         {
             var items = values as ICollection<T> ?? values.ToList();
 
@@ -80,10 +93,11 @@ namespace BbGit.Framework
             if (summarizeErrors && errors.Count > 0)
             {
                 Console.Out.WriteLine("");
-                Colorful.Console.WriteLine($"The following {errors.Count} of {items.Count} operations failed", Color.Red);
+                Console.WriteLine($"The following {errors.Count} of {items.Count} operations failed",
+                    Color.Red);
                 Console.Out.WriteLine("");
 
-                errors.ForEach(e => Colorful.Console.WriteLineFormatted(
+                errors.ForEach(e => Console.WriteLineFormatted(
                     "{0} of {1}: {2} > {3}",
                     new Formatter(e.index, Colors.DefaultColor),
                     new Formatter(items.Count, Colors.DefaultColor),
@@ -124,6 +138,7 @@ namespace BbGit.Framework
             {
                 dict[key] = value = valueProvider(key);
             }
+
             return value;
         }
     }

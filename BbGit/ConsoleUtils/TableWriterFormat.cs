@@ -13,18 +13,18 @@
 
         public TableWriterFormat()
         {
-            Indent = " ";
-            ColumnSpacer = "  ";
-            ColumnWidths = new int[0];
+            this.Indent = " ";
+            this.ColumnSpacer = "  ";
+            this.ColumnWidths = new int[0];
         }
 
         public TableWriterFormat Clone()
         {
             return new TableWriterFormat
             {
-                Indent = Indent,
-                ColumnSpacer = ColumnSpacer,
-                ColumnWidths = ColumnWidths
+                Indent = this.Indent,
+                ColumnSpacer = this.ColumnSpacer,
+                ColumnWidths = this.ColumnWidths
             };
         }
     }

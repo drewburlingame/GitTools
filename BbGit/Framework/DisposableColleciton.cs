@@ -20,71 +20,73 @@ namespace BbGit.Framework
         /// <inheritdoc />
         public IEnumerator<T> GetEnumerator()
         {
-            return innerCollection.GetEnumerator();
+            return this.innerCollection.GetEnumerator();
         }
 
         /// <inheritdoc />
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IEnumerable) innerCollection).GetEnumerator();
+            return ((IEnumerable) this.innerCollection).GetEnumerator();
         }
 
         /// <inheritdoc />
         public void Add(T item)
         {
-            innerCollection.Add(item);
+            this.innerCollection.Add(item);
         }
 
         /// <inheritdoc />
         public void Clear()
         {
-            innerCollection.Clear();
+            this.innerCollection.Clear();
         }
 
         /// <inheritdoc />
         public bool Contains(T item)
         {
-            return innerCollection.Contains(item);
+            return this.innerCollection.Contains(item);
         }
 
         /// <inheritdoc />
         public void CopyTo(T[] array, int arrayIndex)
         {
-            innerCollection.CopyTo(array, arrayIndex);
+            this.innerCollection.CopyTo(array, arrayIndex);
         }
 
         /// <inheritdoc />
         public bool Remove(T item)
         {
-            return innerCollection.Remove(item);
+            return this.innerCollection.Remove(item);
         }
 
         /// <inheritdoc />
-        public int Count => innerCollection.Count;
+        public int Count => this.innerCollection.Count;
 
         /// <inheritdoc />
-        public bool IsReadOnly => innerCollection.IsReadOnly;
+        public bool IsReadOnly => this.innerCollection.IsReadOnly;
 
         /// <inheritdoc />
         public void Dispose()
         {
-            if (isDisposing)
+            if (this.isDisposing)
             {
                 return;
             }
 
             lock (this)
             {
-                if (isDisposing || this.innerCollection == null)
+                if (this.isDisposing || this.innerCollection == null)
                 {
                     return;
                 }
-                isDisposing = true;
+
+                this.isDisposing = true;
 
                 foreach (var item in this.innerCollection)
                 {
                     item.Dispose();
                 }
+
                 this.innerCollection = null;
             }
         }

@@ -7,14 +7,15 @@ using BbGit.BitBucket;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;
 using BbGit.Git;
-using Colorful;
 using CommandDotNet.Attributes;
 using MoreLinq;
 using Console = Colorful.Console;
 
 namespace BbGit.ConsoleApp
 {
-    [ApplicationMetadata(Name = "local", Description = "manage local BitBucket repositories")]
+    [ApplicationMetadata(
+        Name = "local",
+        Description = "manage local BitBucket repositories")]
     public class LocalRepoCommand
     {
         [InjectProperty]
@@ -25,7 +26,12 @@ namespace BbGit.ConsoleApp
 
         [ApplicationMetadata(Description = "List local repositories matching the search criteria")]
         public void Repos(
-            [Option(ShortName = "p", LongName = "projects", Description = "comma-separated list of project keys to filter by.  use '*' to specify has remote repo config.  (some commands require the config to use)")]
+            [Option(
+                ShortName = "p",
+                LongName = "projects",
+                Description = "comma-separated list of project keys to filter by.  " +
+                              "use '*' to specify has remote repo config.  " +
+                              "(some commands require the config to use)")]
             string projects,
             [Option(ShortName = "T", Description = "display additional info in a table format")]
             bool showTable,
@@ -43,12 +49,18 @@ namespace BbGit.ConsoleApp
             bool withLocalStashes,
             [Option(ShortName = "o", Description = "where options:b,w,s are `OR` instead of `AND`")]
             bool orLocalChecks,
-            [Option(ShortName = "i", LongName = "includeIgnored", Description = "includes projects ignored in configuration")]
+            [Option(
+                ShortName = "i",
+                LongName = "includeIgnored",
+                Description = "includes projects ignored in configuration")]
             bool includeIgnored,
-            [Option(ShortName = "I", LongName = "onlyIgnored", Description = "lists only projects ignored in configuration")]
+            [Option(
+                ShortName = "I",
+                LongName = "onlyIgnored",
+                Description = "lists only projects ignored in configuration")]
             bool onlyIgnored)
         {
-            using (var localRepos = GitService.GetLocalRepos())
+            using (var localRepos = this.GitService.GetLocalRepos())
             {
                 var repos = localRepos.AsEnumerable();
 
@@ -68,9 +80,8 @@ namespace BbGit.ConsoleApp
                     if (orLocalChecks)
                     {
                         repos = repos.Where(r =>
-                            (!withLocalBranches || r.LocalBranchCount > 0)
-                            || (!withLocalChanges || r.LocalChangesCount > 0)
-                            || (!withLocalStashes || r.StashCount > 0)
+                            !withLocalBranches || r.LocalBranchCount > 0 || !withLocalChanges ||
+                            r.LocalChangesCount > 0 || !withLocalStashes || r.StashCount > 0
                         );
                     }
                     else
@@ -91,7 +102,8 @@ namespace BbGit.ConsoleApp
                     }
                     else
                     {
-                        var projKeys = projects.Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+                        var projKeys = projects.Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries)
+                            .ToHashSet();
                         repos = repos.Where(l => l.RemoteRepo != null && projKeys.Contains(l.RemoteRepo.ProjectKey));
                     }
                 }
@@ -135,10 +147,15 @@ namespace BbGit.ConsoleApp
 
         [ApplicationMetadata(Description = "Clone all repositories matching the search criteria")]
         public void CloneAll(
-            [Option(ShortName = "p", LongName = "projects", Description = "comma-separated list of project keys to filter by. overridden when piped input is given.")] string projects,
+            [Option(
+                ShortName = "p",
+                LongName = "projects",
+                Description = "comma-separated list of project keys to filter by. " +
+                              "overridden when piped input is given.")]
+            string projects,
             [Option] bool dryrun)
         {
-            var repositories = BbService.GetRepos(projects, usePipedValuesIfAvailable: true).ToList();
+            var repositories = this.BbService.GetRepos(projects, true).ToList();
 
             if (dryrun)
             {
@@ -151,17 +168,18 @@ namespace BbGit.ConsoleApp
             {
                 repositories
                     .Select(r => new RemoteRepo(r))
-                    .SafelyForEach(r => GitService.CloneRepo(r), summarizeErrors: true);
+                    .SafelyForEach(r => this.GitService.CloneRepo(r), summarizeErrors: true);
             }
         }
 
-        [ApplicationMetadata(Description = "Pull all repositories in the parent directory.  Piped input can be used to target specific repositories.")]
+        [ApplicationMetadata(Description = "Pull all repositories in the parent directory.  " +
+                                           "Piped input can be used to target specific repositories.")]
         public void PullAll(
             [Option] bool prune,
             [Option] bool dryrun,
             [Option] string branch = "master")
         {
-            using (var repositories = GitService.GetLocalRepos(usePipedValuesIfAvailable: true))
+            using (var repositories = this.GitService.GetLocalRepos(true))
             {
                 if (dryrun)
                 {
@@ -172,18 +190,24 @@ namespace BbGit.ConsoleApp
                 }
                 else
                 {
-                    repositories.SafelyForEach(r => GitService.PullLatest(r, prune, branch), summarizeErrors: true);
+                    repositories.SafelyForEach(r => this.GitService.PullLatest(r, prune, branch),
+                        summarizeErrors: true);
                 }
             }
         }
 
         [ApplicationMetadata(Description = "Calls paket restore on all ")]
         public void Paket(
-            [Option(ShortName = "i", LongName = "install")] bool install,
-            [Option(ShortName = "r", LongName = "restore")] bool restore,
-            [Option(ShortName = "c", LongName = "clean")] bool cleanPackages,
-            [Option(ShortName = "b", LongName = "bootstrapper")] bool forceBootstapper,
-            [Option(ShortName = "d", LongName = "dryrun")] bool dryrun)
+            [Option(ShortName = "i", LongName = "install")]
+            bool install,
+            [Option(ShortName = "r", LongName = "restore")]
+            bool restore,
+            [Option(ShortName = "c", LongName = "clean")]
+            bool cleanPackages,
+            [Option(ShortName = "b", LongName = "bootstrapper")]
+            bool forceBootstapper,
+            [Option(ShortName = "d", LongName = "dryrun")]
+            bool dryrun)
         {
             // TODO: initialize only: only where packages is empty
 
@@ -198,7 +222,7 @@ namespace BbGit.ConsoleApp
                     Colors.DefaultColor);
             }
 
-            using (var repositories = GitService.GetLocalRepos(usePipedValuesIfAvailable: true))
+            using (var repositories = this.GitService.GetLocalRepos(true))
             {
                 repositories.SafelyForEach(r =>
                 {
@@ -235,7 +259,7 @@ namespace BbGit.ConsoleApp
                         {
                             RunProcessAndWait(
                                 new ProcessStartInfo("paket.exe", "install") {WorkingDirectory = paketDir},
-                                maxSecondsToWait: 120);
+                                120);
                         }
                     }
                     else if (restore)
@@ -245,7 +269,7 @@ namespace BbGit.ConsoleApp
                         {
                             RunProcessAndWait(
                                 new ProcessStartInfo("paket.exe", "restore") {WorkingDirectory = paketDir},
-                                maxSecondsToWait: 60);
+                                60);
                         }
                     }
                 }, summarizeErrors: true);

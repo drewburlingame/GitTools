@@ -13,7 +13,7 @@ namespace BbGit.Framework
 
         public void Dispose()
         {
-            onDispose?.Invoke();
+            this.onDispose?.Invoke();
         }
     }
 }

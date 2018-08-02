@@ -6,8 +6,8 @@ namespace BbGit.Framework
 {
     public class FolderConfig
     {
-        private string path;
         private readonly string bbGitPath;
+        private readonly string path;
 
         public FolderConfig(string path)
         {
@@ -17,18 +17,18 @@ namespace BbGit.Framework
 
         public string SaveConfig(string filename, string contents)
         {
-            EnsureDirectoryExists();
+            this.EnsureDirectoryExists();
 
-            var filePath = BuildFilePath(filename);
+            var filePath = this.BuildFilePath(filename);
             File.WriteAllText(filePath, contents);
             return filePath;
         }
 
         public string GetConfig(string filename)
         {
-            EnsureDirectoryExists();
+            this.EnsureDirectoryExists();
 
-            var filePath = BuildFilePath(filename);
+            var filePath = this.BuildFilePath(filename);
             if (!File.Exists(filePath))
             {
                 return null;
@@ -41,14 +41,14 @@ namespace BbGit.Framework
         {
             filename = SetJsonExtension(filename);
             var json = JSON.Serialize(value, Options.PrettyPrintExcludeNullsIncludeInheritedUtc);
-            return SaveConfig(filename, json);
+            return this.SaveConfig(filename, json);
         }
 
         public T GetJsonConfig<T>(string filename) where T : new()
         {
             filename = SetJsonExtension(filename);
-            var json = GetConfig(filename);
-            return string.IsNullOrWhiteSpace(json) 
+            var json = this.GetConfig(filename);
+            return string.IsNullOrWhiteSpace(json)
                 ? new T()
                 : JSON.Deserialize<T>(json);
         }
@@ -64,6 +64,7 @@ namespace BbGit.Framework
             {
                 throw new InvalidOperationException($"folder does not exist: {this.path}");
             }
+
             if (!Directory.Exists(this.bbGitPath))
             {
                 var directory = Directory.CreateDirectory(this.bbGitPath);

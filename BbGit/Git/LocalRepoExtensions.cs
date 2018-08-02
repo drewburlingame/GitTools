@@ -13,7 +13,6 @@ namespace BbGit.Git
             // That option only affects how a list is filtered, so I fear debugging will not be easy.
             // Disposing here seems to fix it.
             localRepos.ForEach(l => l.Dispose());
-
         }
     }
 }

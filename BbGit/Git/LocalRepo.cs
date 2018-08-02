@@ -9,35 +9,41 @@ namespace BbGit.Git
     public class LocalRepo : IDisposable
     {
         private readonly FolderConfig config;
-        private LazyLoadProxy<RemoteRepo> remoteRepo;
 
         private bool isDisposing;
+        private LazyLoadProxy<RemoteRepo> remoteRepo;
         public string FullPath { get; }
         public string Name { get; }
         public bool Exists { get; private set; }
         public bool IsGitDir { get; private set; }
         public Repository GitRepo { get; private set; }
-        
+
         public RemoteRepo RemoteRepo
         {
-            get => remoteRepo;
-            set => remoteRepo = value;
+            get => this.remoteRepo;
+            set => this.remoteRepo = value;
         }
 
-        public string CurrentBranchName => GitRepo.Head.FriendlyName;
+        public string CurrentBranchName => this.GitRepo.Head.FriendlyName;
 
-        public bool IsInLocalBranch => CurrentBranchName != "master";
+        public bool IsInLocalBranch => this.CurrentBranchName != "master";
 
-        public int LocalBranchCount => GitRepo.Branches.Count(b => !b.IsRemote && b.FriendlyName != "master");
+        public int LocalBranchCount => this.GitRepo.Branches.Count(b => !b.IsRemote && b.FriendlyName != "master");
 
-        public int RemoteBranchCount => GitRepo.Branches.Count(b => b.IsRemote);
+        public int RemoteBranchCount => this.GitRepo.Branches.Count(b => b.IsRemote);
 
-        public int StashCount => GitRepo.Stashes.Count();
+        public int StashCount => this.GitRepo.Stashes.Count();
 
-        public int LocalChangesCount => GitRepo
-            .RetrieveStatus(new StatusOptions {IncludeUntracked = true, RecurseUntrackedDirs = true, ExcludeSubmodules = true, Show = StatusShowOption.WorkDirOnly})
+        public int LocalChangesCount => this.GitRepo
+            .RetrieveStatus(new StatusOptions
+            {
+                IncludeUntracked = true,
+                RecurseUntrackedDirs = true,
+                ExcludeSubmodules = true,
+                Show = StatusShowOption.WorkDirOnly
+            })
             .Count(s => s.State != FileStatus.Ignored);
-        
+
         public LocalRepo(Repository gitRepo)
             : this(gitRepo.Info.WorkingDirectory, gitRepo)
         {
@@ -51,68 +57,70 @@ namespace BbGit.Git
         /// <summary>private because it doesn't make sense to provide both</summary>
         private LocalRepo(string fullPath, Repository gitRepo = null)
         {
-            FullPath = fullPath;
-            GitRepo = gitRepo;
-            Exists = Directory.Exists(FullPath);
-            Name = new DirectoryInfo(FullPath).Name;
-            config = new FolderConfig(FullPath);
-            EvaluateIfExists();
+            this.FullPath = fullPath;
+            this.GitRepo = gitRepo;
+            this.Exists = Directory.Exists(this.FullPath);
+            this.Name = new DirectoryInfo(this.FullPath).Name;
+            this.config = new FolderConfig(this.FullPath);
+            this.EvaluateIfExists();
 
-            this.remoteRepo = new LazyLoadProxy<RemoteRepo>(() => config.GetJsonConfig<RemoteRepo>($"{Name}-remote"));
+            this.remoteRepo =
+                new LazyLoadProxy<RemoteRepo>(() => this.config.GetJsonConfig<RemoteRepo>($"{this.Name}-remote"));
         }
 
         public LocalRepo(LocalRepo localRepo)
         {
-            FullPath = localRepo.FullPath;
+            this.FullPath = localRepo.FullPath;
             this.remoteRepo = localRepo.remoteRepo;
-            Exists = localRepo.Exists;
-            IsGitDir = localRepo.IsGitDir;
-            GitRepo = localRepo.GitRepo;
-            Name = localRepo.Name;
-            config = localRepo.config;
-        }
-
-        public void SaveConfigs()
-        {
-            config.SaveJsonConfig($"{Name}-remote", RemoteRepo);
-        }
-
-        public void ClearConfigs()
-        {
-            config.ClearAll();
-        }
-
-        /// <summary>Evaluates if the local repo exists and if so, updates related properties</summary>
-        public void EvaluateIfExists()
-        {
-            Exists = Directory.Exists(FullPath);
-            if (Exists)
-            {
-                IsGitDir = IsGitDirectory(FullPath);
-                if (IsGitDir)
-                {
-                    GitRepo = GitRepo ?? new Repository(FullPath);
-                }
-            }
+            this.Exists = localRepo.Exists;
+            this.IsGitDir = localRepo.IsGitDir;
+            this.GitRepo = localRepo.GitRepo;
+            this.Name = localRepo.Name;
+            this.config = localRepo.config;
         }
 
         public void Dispose()
         {
-            if (isDisposing)
+            if (this.isDisposing)
             {
                 return;
             }
 
             lock (this)
             {
-                if (isDisposing || GitRepo == null)
+                if (this.isDisposing || this.GitRepo == null)
                 {
                     return;
                 }
-                isDisposing = true;
 
-                GitRepo.Dispose();
-                GitRepo = null;
+                this.isDisposing = true;
+
+                this.GitRepo.Dispose();
+                this.GitRepo = null;
+            }
+        }
+
+        public void SaveConfigs()
+        {
+            this.config.SaveJsonConfig($"{this.Name}-remote", this.RemoteRepo);
+        }
+
+        public void ClearConfigs()
+        {
+            this.config.ClearAll();
+        }
+
+        /// <summary>Evaluates if the local repo exists and if so, updates related properties</summary>
+        public void EvaluateIfExists()
+        {
+            this.Exists = Directory.Exists(this.FullPath);
+            if (this.Exists)
+            {
+                this.IsGitDir = IsGitDirectory(this.FullPath);
+                if (this.IsGitDir)
+                {
+                    this.GitRepo = this.GitRepo ?? new Repository(this.FullPath);
+                }
             }
         }
 

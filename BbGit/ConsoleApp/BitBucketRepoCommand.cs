@@ -23,18 +23,27 @@ namespace BbGit.ConsoleApp
 
         [ApplicationMetadata(Description = "Lists projects that contain repositories")]
         public void Projects(
-            [Option(ShortName = "u", LongName = "uncloned", Description = "filters out repositories that have already been cloned.")]
+            [Option(
+                ShortName = "u",
+                LongName = "uncloned",
+                Description = "filters out repositories that have already been cloned.")]
             bool uncloned,
-            [Option(ShortName = "i", LongName = "includeIgnored", Description = "includes projects ignored in configuration")]
+            [Option(
+                ShortName = "i",
+                LongName = "includeIgnored",
+                Description = "includes projects ignored in configuration")]
             bool includeIgnored,
-            [Option(ShortName = "I", LongName = "onlyIgnored", Description = "lists only projects ignored in configuration")]
+            [Option(
+                ShortName = "I",
+                LongName = "onlyIgnored",
+                Description = "lists only projects ignored in configuration")]
             bool onlyIgnored)
         {
-            var localRepoNames = GitService.GetLocalRepoNames(includeIgnored, onlyIgnored).ToHashSet();
+            var localRepoNames = this.GitService.GetLocalRepoNames(includeIgnored, onlyIgnored).ToHashSet();
 
             var projects = new Dictionary<string, Tuple<string, List<Repository>>>();
 
-            foreach (var repo in BbService
+            foreach (var repo in this.BbService
                 .GetRepos(usePipedValuesIfAvailable: true, includeIgnored: includeIgnored, onlyIgnored: onlyIgnored)
                 .Where(r => !uncloned || !localRepoNames.Contains(r.name)))
             {
@@ -56,24 +65,43 @@ namespace BbGit.ConsoleApp
 
         [ApplicationMetadata(Description = "List BitBucket repositories matching the search criteria")]
         public void Repos(
-            [Option(ShortName = "p", LongName = "projects", Description = "comma-separated list of project keys to filter by")]
+            [Option(
+                ShortName = "p",
+                LongName = "projects",
+                Description = "comma-separated list of project keys to filter by")]
             string projects,
-            [Option(ShortName = "T", Description = "display additional info in a table format")]
+            [Option(
+                ShortName = "T",
+                Description = "display additional info in a table format")]
             bool showTable,
-            [Option(ShortName = "P", Description = "show project information")]
+            [Option(
+                ShortName = "P",
+                Description = "show project information")]
             bool showProjectInfo,
-            [Option(ShortName = "r", LongName = "repo", Description = "regex to filter repo name by")]
+            [Option(
+                ShortName = "r",
+                LongName = "repo",
+                Description = "regex to filter repo name by")]
             string repoRegex,
-            [Option(ShortName = "u", LongName = "uncloned", Description = "filters out repositories that have already been cloned.")]
+            [Option(
+                ShortName = "u",
+                LongName = "uncloned",
+                Description = "filters out repositories that have already been cloned.")]
             bool uncloned,
-            [Option(ShortName = "i", LongName = "includeIgnored", Description = "includes projects ignored in configuration")]
+            [Option(
+                ShortName = "i",
+                LongName = "includeIgnored",
+                Description = "includes projects ignored in configuration")]
             bool includeIgnored,
-            [Option(ShortName = "I", LongName = "onlyIgnored", Description = "lists only projects ignored in configuration")]
+            [Option(
+                ShortName = "I",
+                LongName = "onlyIgnored",
+                Description = "lists only projects ignored in configuration")]
             bool onlyIgnored
-            )
+        )
         {
-            var localRepoNames = GitService.GetLocalRepoNames(includeIgnored, onlyIgnored).ToHashSet();
-            var bbRepos = BbService.GetRepos(projects, includeIgnored: includeIgnored, onlyIgnored: onlyIgnored);
+            var localRepoNames = this.GitService.GetLocalRepoNames(includeIgnored, onlyIgnored).ToHashSet();
+            var bbRepos = this.BbService.GetRepos(projects, includeIgnored: includeIgnored, onlyIgnored: onlyIgnored);
 
             if (repoRegex != null)
             {
@@ -90,7 +118,7 @@ namespace BbGit.ConsoleApp
             {
                 if (showProjectInfo)
                 {
-                    bbRepos.OrderBy(r => r.name).Select(r => new[] { r.name, r.project.key }).WriteTable();
+                    bbRepos.OrderBy(r => r.name).Select(r => new[] {r.name, r.project.key}).WriteTable();
                 }
                 else
                 {
@@ -99,7 +127,7 @@ namespace BbGit.ConsoleApp
             }
             else
             {
-                bbRepos.ForEach(r => Console.Out.WriteLine((string) r.name));
+                bbRepos.ForEach(r => Console.Out.WriteLine(r.name));
             }
         }
     }

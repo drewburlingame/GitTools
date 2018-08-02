@@ -11,7 +11,7 @@ namespace BbGit.Framework
 
         public void SetCurrentDirectory(string currentDirectory)
         {
-            CurrentDirectory = currentDirectory ?? Environment.CurrentDirectory;
+            this.CurrentDirectory = currentDirectory ?? Environment.CurrentDirectory;
         }
     }
 }

@@ -11,17 +11,19 @@ namespace BbGit.Framework
         /// <inheritdoc />
         private PipedInput(string[] lines)
         {
-            Values = lines;
-            HasValues = !lines.IsNullOrEmpty();
+            this.Values = lines;
+            this.HasValues = !lines.IsNullOrEmpty();
         }
 
         public static PipedInput GetPipedInput()
         {
             if (Console.IsInputRedirected)
             {
-                var input = Console.In.ReadToEnd().Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                var input = Console.In.ReadToEnd()
+                    .Split(new[] {"\r\n", "\r", "\n"}, StringSplitOptions.RemoveEmptyEntries);
                 return new PipedInput(input);
             }
+
             return new PipedInput(null);
         }
     }
