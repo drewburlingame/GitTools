@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace BbGit.Framework
 {
@@ -20,7 +21,9 @@ namespace BbGit.Framework
             if (Console.IsInputRedirected)
             {
                 var input = Console.In.ReadToEnd()
-                    .Split(new[] {"\r\n", "\r", "\n"}, StringSplitOptions.RemoveEmptyEntries);
+                    .Split(new[] {"\r\n", "\r", "\n"}, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim())
+                    .ToArray();
                 return new PipedInput(input);
             }
 

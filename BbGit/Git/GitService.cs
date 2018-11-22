@@ -210,6 +210,11 @@ namespace BbGit.Git
             // Disposing the collection seems to fix it.
         }
 
+        public string GetLocalReposConfigPath()
+        {
+            return new FolderConfig(this.CurrentDirectory).BbGitPath;
+        }
+
         public LocalReposConfig GetLocalReposConfig()
         {
             return this.localReposConfig

@@ -204,6 +204,8 @@ namespace BbGit.ConsoleApp
             bool restore,
             [Option(ShortName = "c", LongName = "clean")]
             bool cleanPackages,
+            [Option(ShortName = "s", LongName = "show-installed-packages")]
+            bool showInstalledPackages,
             [Option(ShortName = "b", LongName = "bootstrapper")]
             bool forceBootstapper,
             [Option(ShortName = "d", LongName = "dryrun")]
@@ -218,7 +220,8 @@ namespace BbGit.ConsoleApp
                     $"{(dryrun ? " --dryrun" : "")}" +
                     $"{(cleanPackages ? " --clean" : "")}" +
                     $"{(install ? " --install" : "")}" +
-                    $"{(restore && !install ? " --restore" : "")}",
+                    $"{(restore && !install ? " --restore" : "")}" +
+                    $"{(showInstalledPackages ? " --showInstalledPackages" : "")}",
                     Colors.DefaultColor);
             }
 
@@ -269,6 +272,17 @@ namespace BbGit.ConsoleApp
                         {
                             RunProcessAndWait(
                                 new ProcessStartInfo("paket.exe", "restore") {WorkingDirectory = paketDir},
+                                60);
+                        }
+                    }
+                    
+                    if (showInstalledPackages)
+                    {
+                        Console.Out.WriteLine($"running paket show-installed-packages");
+                        if (!dryrun)
+                        {
+                            RunProcessAndWait(
+                                new ProcessStartInfo("paket.exe", "show-installed-packages") {WorkingDirectory = paketDir},
                                 60);
                         }
                     }

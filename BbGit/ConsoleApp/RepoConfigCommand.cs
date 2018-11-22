@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using BbGit.BitBucket;
 using BbGit.Framework;
@@ -11,8 +13,15 @@ using SharpBucket.V2.Pocos;
 namespace BbGit.ConsoleApp
 {
     [ApplicationMetadata(Name = "config-repo",
-        Description = "Configurations for repos within the same parent folder. " +
-                      "Creates {currentfolder}/.bbgit where currentFolder contains the repos.")]
+        Description = "Configurations for repos within the same parent folder.",
+        ExtendedHelpText =
+            "Creates {currentfolder}/.bbgit where currentFolder contains the repos.\n" +
+            "\n" +
+            "Terminology\n" +
+            "  repos config:  configs for the set of repos stored in the parent folder\n" +
+            "  local repos:   a repo cloned to this machine\n" +
+            "  local configs: configs for a local repo\n" +
+            "  remote repos:  repos in bitbucket")]
     public class RepoConfigCommand
     {
         [InjectProperty]
@@ -61,6 +70,28 @@ namespace BbGit.ConsoleApp
                 }
 
                 this.BbService.SaveRemoteReposConfig(config);
+            }
+        }
+
+        [ApplicationMetadata(Description = "prints the location of the repos config file")]
+        public void Where(
+            [Option(
+                ShortName = "o",
+                Description = "opens the directory in windows explorer")]
+            bool open)
+        {
+            var path = this.GitService.GetLocalReposConfigPath();
+
+            if (!Directory.Exists(path))
+            {
+                Console.Out.WriteLine("repos config not set");
+                return;
+            }
+
+            Console.Out.WriteLine(path);
+            if (open && !path.IsNullOrEmpty())
+            {
+                Process.Start(path);
             }
         }
 

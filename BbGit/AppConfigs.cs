@@ -24,7 +24,12 @@ namespace BbGit
             var appConfigs = new AppConfigs();
 
             var folderConfig = GetFolderConfig();
-            var configuration = Configuration.LoadFromString(folderConfig.GetConfig("config"));
+            var configString = folderConfig.GetConfig("config");
+            if (configString == null)
+            {
+                return appConfigs;
+            }
+            var configuration = Configuration.LoadFromString(configString);
 
             foreach (var config in configuration)
             {

@@ -38,7 +38,7 @@ namespace BbGit
                 var containerBuilder = new ContainerBuilder();
 
                 var configs = AppConfigs.Load();
-                var config = configs.Default;
+                var config = configs.Default ?? new AppConfig();
 
                 containerBuilder.RegisterInstance(PipedInput.GetPipedInput());
                 containerBuilder.RegisterInstance(configs);

@@ -11,7 +11,7 @@ for example, if you have the following paths:
 you would run this tool from the `c:\src` directory
 
 # Setup
-run the command `BbGit app-config init`, creating your local config file.
+run the command `BbGit config-global init-app`, creating your local config file.
 Edit the config file, given by the command, with your BitBucket account info.
 Follow [this guide](https://confluence.atlassian.com/bitbucket/app-passwords-828781300.html) to create your app password
 
@@ -21,7 +21,7 @@ After building/downloading bbgit, add the .exe to your path for easy use anywher
 BbGit stores configs and caches within each repository directory, within a .bbgit folder.  Add this to your .gitignore file
 Use the `BbGit repo-config update-all-configs` command to update existing repositories
 
-Use `BbGit repo-config clear-all-configs` to remove the folder
+Use `BbGit config-repo local-configs-clear` from the root folder to remove the folders from all repos
 
 # Usage
 Type `-h` with any command and sub-command to see the options available.
