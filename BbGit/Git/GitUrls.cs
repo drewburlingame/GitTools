@@ -17,26 +17,28 @@ namespace BbGit.Git
 
         public static IDisposable ToggleHttpsUrl(LocalRepo localRepo)
         {
-            // LibGit2Sharp does not support ssh at this time so we'll need to switch to https for any operations with a remote
-            var httpsUrl = localRepo.RemoteRepo?.HttpsUrl;
+            // LibGit2Sharp does not support ssh at this time
+            // so we'll need to switch to https for any operations with a remote
 
-            var gitRepo = localRepo.GitRepo;
-            var remote = gitRepo.Network.Remotes["origin"];
-            var remoteUrl = remote.Url;
-            var remotePushUrl = remote.PushUrl;
+            var remote = localRepo.GitRepo.Network.Remotes["origin"];
+            if (remote == null)
+            {
+                throw new Exception($"origin not specified for {localRepo.Name}.  add an origin or reclone this repo.");
+            }
 
-            if (remoteUrl.StartsWith("https") && remotePushUrl.StartsWith("https"))
+            if (remote.Url.StartsWith("https") && remote.PushUrl.StartsWith("https"))
             {
                 return new DisposableAction(null);
             }
-
+            
+            var httpsUrl = localRepo.RemoteRepo?.HttpsUrl;
             if (httpsUrl == null)
             {
                 throw new Exception($"remote repo not found for {localRepo.Name}");
             }
 
             SetOriginUrl(localRepo.GitRepo, httpsUrl, httpsUrl);
-            return new DisposableAction(() => SetOriginUrl(localRepo.GitRepo, remoteUrl, remotePushUrl));
+            return new DisposableAction(() => SetOriginUrl(localRepo.GitRepo, remote.Url, remote.PushUrl));
         }
 
         private static void SetOriginUrl(Repository repo, string url, string pushUrl)
