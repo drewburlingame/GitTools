@@ -41,7 +41,11 @@ see [paket.dependecies] (paket.dependencies) for the complete list.
 These stand out has having made the big differences for me.
 
 [CommandDotNet] (https://github.com/bilal-fazlani/commanddotnet) Bilal Fazlani created a great framework for creating console apps with multiple commands.  This is now my favorite console framework.
+
 [Colorful.Console] (https://github.com/tomakita/Colorful.Console) Tom Akita created a handy library for formatting console output, making it so much easier to grok the output.
+
 [LibGit2Sharp] (https://github.com/libgit2/libgit2sharp) The most complete library for interacting with git.
+
 [Paket] (https://github.com/fsprojects/Paket) sane dependency management
+
 [SharpBucket] (https://github.com/MitjaBezensek/SharpBucket/) Mitja Bezenšek created a great library for interacting with the BitBucket api
