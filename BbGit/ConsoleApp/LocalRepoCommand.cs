@@ -202,6 +202,8 @@ namespace BbGit.ConsoleApp
             bool install,
             [Option(ShortName = "r", LongName = "restore")]
             bool restore,
+            [Option(ShortName = "R", LongName = "restore --force")]
+            bool restoreForced,
             [Option(ShortName = "c", LongName = "clean")]
             bool cleanPackages,
             [Option(ShortName = "s", LongName = "show-installed-packages")]
@@ -272,6 +274,16 @@ namespace BbGit.ConsoleApp
                         {
                             RunProcessAndWait(
                                 new ProcessStartInfo("paket.exe", "restore") {WorkingDirectory = paketDir},
+                                60);
+                        }
+                    }
+                    else if (restoreForced)
+                    {
+                        Console.Out.WriteLine($"running paket restore --force");
+                        if (!dryrun)
+                        {
+                            RunProcessAndWait(
+                                new ProcessStartInfo("paket.exe", "restore --force") {WorkingDirectory = paketDir},
                                 60);
                         }
                     }
