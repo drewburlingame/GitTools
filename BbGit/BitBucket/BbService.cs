@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using BbGit.Framework;
-using MoreLinq;
 using SharpBucket.V2;
 using SharpBucket.V2.Pocos;
 
@@ -40,7 +39,8 @@ namespace BbGit.BitBucket
             bool onlyIgnored = false)
         {
             var repositories = this.bbApi.RepositoriesEndPoint()
-                .ListRepositories(this.appConfig.DefaultAccount)
+                .RepositoriesResource(this.appConfig.DefaultAccount)
+                .EnumerateRepositories()
                 .Where(repo => this.Include(includeIgnored, onlyIgnored, repo))
                 .OrderBy(r => r.name)
                 .AsEnumerable();
@@ -62,10 +62,9 @@ namespace BbGit.BitBucket
 
         public RemoteReposConfig GetRemoteReposConfig()
         {
-            return this.remoteReposConfig
-                   ?? (this.remoteReposConfig =
-                       new FolderConfig(this.CurrentDirectory).GetJsonConfig<RemoteReposConfig>(
-                           RemoteReposConfigFileName));
+            return this.remoteReposConfig ??=
+                new FolderConfig(this.CurrentDirectory)
+                    .GetJsonConfig<RemoteReposConfig>(RemoteReposConfigFileName);
         }
 
         public void SaveRemoteReposConfig(RemoteReposConfig config)

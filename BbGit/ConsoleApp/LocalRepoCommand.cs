@@ -7,24 +7,26 @@ using BbGit.BitBucket;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;
 using BbGit.Git;
-using CommandDotNet.Attributes;
-using MoreLinq;
+using CommandDotNet;
 using Console = Colorful.Console;
 
 namespace BbGit.ConsoleApp
 {
-    [ApplicationMetadata(
+    [Command(
         Name = "local",
         Description = "manage local BitBucket repositories")]
     public class LocalRepoCommand
     {
-        [InjectProperty]
-        public BbService BbService { get; set; }
+        private readonly BbService bbService;
+        private readonly GitService gitService;
 
-        [InjectProperty]
-        public GitService GitService { get; set; }
+        public LocalRepoCommand(BbService bbService, GitService gitService)
+        {
+            this.bbService = bbService ?? throw new ArgumentNullException(nameof(bbService));
+            this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
+        }
 
-        [ApplicationMetadata(Description = "List local repositories matching the search criteria")]
+        [Command(Description = "List local repositories matching the search criteria")]
         public void Repos(
             [Option(
                 ShortName = "p",
@@ -60,7 +62,7 @@ namespace BbGit.ConsoleApp
                 Description = "lists only projects ignored in configuration")]
             bool onlyIgnored)
         {
-            using (var localRepos = this.GitService.GetLocalRepos())
+            using (var localRepos = this.gitService.GetLocalRepos())
             {
                 var repos = localRepos.AsEnumerable();
 
@@ -145,7 +147,7 @@ namespace BbGit.ConsoleApp
             }
         }
 
-        [ApplicationMetadata(Description = "Clone all repositories matching the search criteria")]
+        [Command(Description = "Clone all repositories matching the search criteria")]
         public void CloneAll(
             [Option(
                 ShortName = "p",
@@ -155,7 +157,7 @@ namespace BbGit.ConsoleApp
             string projects,
             [Option] bool dryrun)
         {
-            var repositories = this.BbService.GetRepos(projects, true).ToList();
+            var repositories = this.bbService.GetRepos(projects, true).ToList();
 
             if (dryrun)
             {
@@ -168,18 +170,18 @@ namespace BbGit.ConsoleApp
             {
                 repositories
                     .Select(r => new RemoteRepo(r))
-                    .SafelyForEach(r => this.GitService.CloneRepo(r), summarizeErrors: true);
+                    .SafelyForEach(r => this.gitService.CloneRepo(r), summarizeErrors: true);
             }
         }
 
-        [ApplicationMetadata(Description = "Pull all repositories in the parent directory.  " +
+        [Command(Description = "Pull all repositories in the parent directory.  " +
                                            "Piped input can be used to target specific repositories.")]
         public void PullAll(
             [Option] bool prune,
             [Option] bool dryrun,
             [Option] string branch = "master")
         {
-            using (var repositories = this.GitService.GetLocalRepos(true))
+            using (var repositories = this.gitService.GetLocalRepos(true))
             {
                 if (dryrun)
                 {
@@ -190,13 +192,13 @@ namespace BbGit.ConsoleApp
                 }
                 else
                 {
-                    repositories.SafelyForEach(r => this.GitService.PullLatest(r, prune, branch),
+                    repositories.SafelyForEach(r => this.gitService.PullLatest(r, prune, branch),
                         summarizeErrors: true);
                 }
             }
         }
 
-        [ApplicationMetadata(Description = "Calls paket restore on all ")]
+        [Command(Description = "Calls paket restore on all ")]
         public void Paket(
             [Option(ShortName = "i", LongName = "install")]
             bool install,
@@ -227,7 +229,7 @@ namespace BbGit.ConsoleApp
                     Colors.DefaultColor);
             }
 
-            using (var repositories = this.GitService.GetLocalRepos(true))
+            using (var repositories = this.gitService.GetLocalRepos(true))
             {
                 repositories.SafelyForEach(r =>
                 {

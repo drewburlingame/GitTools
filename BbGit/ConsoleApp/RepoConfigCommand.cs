@@ -6,13 +6,13 @@ using System.Linq;
 using BbGit.BitBucket;
 using BbGit.Framework;
 using BbGit.Git;
-using CommandDotNet.Attributes;
+using CommandDotNet;
 using MoreLinq;
 using SharpBucket.V2.Pocos;
 
 namespace BbGit.ConsoleApp
 {
-    [ApplicationMetadata(Name = "config-repo",
+    [Command(Name = "config-repo",
         Description = "Configurations for repos within the same parent folder.",
         ExtendedHelpText =
             "Creates {currentfolder}/.bbgit where currentFolder contains the repos.\n" +
@@ -24,14 +24,16 @@ namespace BbGit.ConsoleApp
             "  remote repos:  repos in bitbucket")]
     public class RepoConfigCommand
     {
-        [InjectProperty]
-        public BbService BbService { get; set; }
+        private readonly BbService bbService;
+        private readonly GitService gitService;
 
-        [InjectProperty]
-        public GitService GitService { get; set; }
+        public RepoConfigCommand(BbService bbService, GitService gitService)
+        {
+            this.bbService = bbService ?? throw new ArgumentNullException(nameof(bbService));
+            this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
+        }
 
-
-        [ApplicationMetadata(
+        [Command(
             Description = "Set's configs for managing repositories located in the working directory. " +
                           "Piped options are not filtered by ignore regex's. " +
                           "To clear a string config, set it to \" \"")]
@@ -51,14 +53,14 @@ namespace BbGit.ConsoleApp
         {
             if (ignoreLocalReposRegex != null)
             {
-                var config = this.GitService.GetLocalReposConfig();
+                var config = this.gitService.GetLocalReposConfig();
                 config.IgnoredReposRegex = ignoreLocalReposRegex;
-                this.GitService.SaveLocalReposConfig(config);
+                this.gitService.SaveLocalReposConfig(config);
             }
 
             if (ignoredRemoteReposRegex != null || ignoredRemoteProjectsRegex != null)
             {
-                var config = this.BbService.GetRemoteReposConfig();
+                var config = this.bbService.GetRemoteReposConfig();
                 if (ignoredRemoteReposRegex != null)
                 {
                     config.IgnoredReposRegex = ignoredRemoteReposRegex;
@@ -69,18 +71,18 @@ namespace BbGit.ConsoleApp
                     config.IgnoredProjectsRegex = ignoredRemoteProjectsRegex;
                 }
 
-                this.BbService.SaveRemoteReposConfig(config);
+                this.bbService.SaveRemoteReposConfig(config);
             }
         }
 
-        [ApplicationMetadata(Description = "prints the location of the repos config file")]
+        [Command(Description = "prints the location of the repos config file")]
         public void Where(
             [Option(
                 ShortName = "o",
                 Description = "opens the directory in windows explorer")]
             bool open)
         {
-            var path = this.GitService.GetLocalReposConfigPath();
+            var path = this.gitService.GetLocalReposConfigPath();
 
             if (!Directory.Exists(path))
             {
@@ -97,30 +99,30 @@ namespace BbGit.ConsoleApp
 
         public void List()
         {
-            var localConfig = this.GitService.GetLocalReposConfig();
+            var localConfig = this.gitService.GetLocalReposConfig();
             Console.Out.WriteLine("");
             Console.Out.WriteLine($"ignore local repos: --ilr    = {localConfig.IgnoredReposRegex}");
-            var remoteConfig = this.BbService.GetRemoteReposConfig();
+            var remoteConfig = this.bbService.GetRemoteReposConfig();
             Console.Out.WriteLine($"ignore remote repos: --irr   = {remoteConfig.IgnoredReposRegex}");
             Console.Out.WriteLine($"ignore remote projects --irp = {remoteConfig.IgnoredProjectsRegex}");
             Console.Out.WriteLine("");
         }
 
-        [ApplicationMetadata(
+        [Command(
             Description = "updates the BbGit configurations in the local repos",
             ExtendedHelpText = "use this when repositories were not cloned by BbGit " +
                                "or when using a new version of BbGit that uses updated configs.")]
         public void LocalConfigsUpdate()
         {
-            var remoteRepos = this.BbService.GetRepos(usePipedValuesIfAvailable: true).ToList();
+            var remoteRepos = this.bbService.GetRepos(usePipedValuesIfAvailable: true).ToList();
 
-            using (var localRepos = this.GitService.GetLocalRepos(true))
+            using (var localRepos = this.gitService.GetLocalRepos(true))
             {
                 var joinedRepos = LeftJoinRepos(localRepos, remoteRepos).Where(j => j.remote != null);
 
                 joinedRepos.SafelyForEach(
                     j => j.local.Name,
-                    j => this.GitService.UpdateRepoConfigs(new LocalRepo(j.local)
+                    j => this.gitService.UpdateRepoConfigs(new LocalRepo(j.local)
                     {
                         RemoteRepo = new RemoteRepo(j.remote)
                     }),
@@ -128,13 +130,13 @@ namespace BbGit.ConsoleApp
             }
         }
 
-        [ApplicationMetadata(Description = "removes the BbGit configurations and .bbgit folder from the local repos")]
+        [Command(Description = "removes the BbGit configurations and .bbgit folder from the local repos")]
         public void LocalConfigsClear()
         {
-            using (var localRepos = this.GitService.GetLocalRepos(true))
+            using (var localRepos = this.gitService.GetLocalRepos(true))
             {
                 localRepos.SafelyForEach(
-                    j => this.GitService.ClearRepoConfigs(new LocalRepo(j)),
+                    j => this.gitService.ClearRepoConfigs(new LocalRepo(j)),
                     summarizeErrors: true);
             }
         }

@@ -6,22 +6,25 @@ using BbGit.BitBucket;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;
 using BbGit.Git;
-using CommandDotNet.Attributes;
-using MoreLinq;
+using CommandDotNet;
 using SharpBucket.V2.Pocos;
+using static MoreLinq.Extensions.ForEachExtension;
 
 namespace BbGit.ConsoleApp
 {
-    [ApplicationMetadata(Name = "bb", Description = "Query repository info via BitBucket API")]
+    [Command(Name = "bb", Description = "Query repository info via BitBucket API")]
     public class BitBucketRepoCommand
     {
-        [InjectProperty]
-        public BbService BbService { get; set; }
+        private readonly BbService bbService;
+        private readonly GitService gitService;
+         
+        public BitBucketRepoCommand(BbService bbService, GitService gitService)
+        {
+            this.bbService = bbService ?? throw new ArgumentNullException(nameof(bbService));
+            this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
+        }
 
-        [InjectProperty]
-        public GitService GitService { get; set; }
-
-        [ApplicationMetadata(Description = "Lists projects that contain repositories")]
+        [Command(Description = "Lists projects that contain repositories")]
         public void Projects(
             [Option(
                 ShortName = "u",
@@ -39,11 +42,11 @@ namespace BbGit.ConsoleApp
                 Description = "lists only projects ignored in configuration")]
             bool onlyIgnored)
         {
-            var localRepoNames = this.GitService.GetLocalRepoNames(includeIgnored, onlyIgnored).ToHashSet();
+            var localRepoNames = this.gitService.GetLocalRepoNames(includeIgnored, onlyIgnored).ToHashSet();
 
             var projects = new Dictionary<string, Tuple<string, List<Repository>>>();
 
-            foreach (var repo in this.BbService
+            foreach (var repo in this.bbService
                 .GetRepos(usePipedValuesIfAvailable: true, includeIgnored: includeIgnored, onlyIgnored: onlyIgnored)
                 .Where(r => !uncloned || !localRepoNames.Contains(r.name)))
             {
@@ -63,7 +66,7 @@ namespace BbGit.ConsoleApp
                 .WriteTable(new[] {"key", "name", "repo count"});
         }
 
-        [ApplicationMetadata(Description = "List BitBucket repositories matching the search criteria")]
+        [Command(Description = "List BitBucket repositories matching the search criteria")]
         public void Repos(
             [Option(
                 ShortName = "p",
@@ -100,8 +103,8 @@ namespace BbGit.ConsoleApp
             bool onlyIgnored
         )
         {
-            var localRepoNames = this.GitService.GetLocalRepoNames(includeIgnored, onlyIgnored).ToHashSet();
-            var bbRepos = this.BbService.GetRepos(projects, includeIgnored: includeIgnored, onlyIgnored: onlyIgnored);
+            var localRepoNames = this.gitService.GetLocalRepoNames(includeIgnored, onlyIgnored).ToHashSet();
+            var bbRepos = this.bbService.GetRepos(projects, includeIgnored: includeIgnored, onlyIgnored: onlyIgnored);
 
             if (repoRegex != null)
             {

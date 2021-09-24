@@ -1,9 +1,9 @@
 ﻿using BbGit.Framework;
-using CommandDotNet.Attributes;
+using CommandDotNet;
 
 namespace BbGit.ConsoleApp
 {
-    [ApplicationMetadata(Name = "BbGit", Description = "GitTools for BitBucket")]
+    [Command(Name = "BbGit", Description = "GitTools for BitBucket")]
     public class GitApplication
     {
         private readonly string targetDir;
@@ -21,7 +21,6 @@ namespace BbGit.ConsoleApp
         [SubCommand]
         public RepoConfigCommand RepoConfigCommand { get; set; }
 
-        [InjectProperty]
         public DirectoryResolver DirectoryResolver
         {
             get => this.directoryResolver;

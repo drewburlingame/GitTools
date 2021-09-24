@@ -4,7 +4,8 @@
     {
         public enum AuthTypes
         {
-            Basic
+            Basic,
+            OAuth
         }
 
         public AuthTypes AuthType { get; set; }

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Linq;
-using System.Threading;
 using Autofac;
 using BbGit.BitBucket;
 using BbGit.ConsoleApp;
@@ -8,51 +6,33 @@ using BbGit.ConsoleUtils;
 using BbGit.Framework;
 using BbGit.Git;
 using CommandDotNet;
+using CommandDotNet.Diagnostics;
 using CommandDotNet.IoC.Autofac;
-using CommandDotNet.Models;
+using CommandDotNet.NameCasing;
 using SharpBucket.V2;
 
 namespace BbGit
 {
-    internal class Program
+    internal static class Program
     {
         private static int Main(string[] args)
         {
             try
             {
-                if (args.Length > 0 && args.Last() == "DEBUG")
-                {
-                    // Debugger.Break used to prompt to open in VS.Net, but that isn'w working
-                    // Add a breakpoint to Thread.Sleep and then change bool to false to continue debugging.
-                    Console.Out.WriteLine("You can now attach to this process");
-                    var changeThisToFalse = true;
-                    while (changeThisToFalse)
-                    {
-                        Thread.Sleep(1000);
-                    }
-
-                    args = args.Take(args.Length - 1).ToArray();
-                }
-
-
-                var containerBuilder = new ContainerBuilder();
-
                 var configs = AppConfigs.Load();
-                var config = configs.Default ?? new AppConfig();
 
-                containerBuilder.RegisterInstance(PipedInput.GetPipedInput());
-                containerBuilder.RegisterInstance(configs);
-                containerBuilder.RegisterInstance(config);
-                containerBuilder.RegisterInstance(new DirectoryResolver());
-                containerBuilder.RegisterType<BbService>();
-                containerBuilder.RegisterType<GitService>();
+                var appRunner = new AppRunner<GitApplication>()
+                    .UseDefaultMiddleware(excludePrompting: true)
+                    .UseNameCasing(Case.KebabCase)
+                    .UseErrorHandler((ctx, ex) =>
+                    {
+                        ctx.Console.Error.WriteLine(ctx.ToString());
+                        var exMsg = ex.Print(includeProperties: true, includeData: true, includeStackTrace: true);
+                        ctx.Console.Error.WriteLine(exMsg);
+                        return ExitCodes.Error.Result;
+                    })
+                    .RegisterContainer(configs);
 
-                RegisterBbApi(containerBuilder, config);
-
-                var container = containerBuilder.Build();
-
-                var appSettings = new AppSettings {Case = Case.KebabCase};
-                var appRunner = new AppRunner<GitApplication>(appSettings).UseAutofac(container);
                 return appRunner.Run(args);
             }
             catch (Exception e)
@@ -62,10 +42,43 @@ namespace BbGit
             }
         }
 
-        private static void RegisterBbApi(ContainerBuilder containerBuilder, AppConfig appConfig)
+        private static AppRunner RegisterContainer(this AppRunner appRunner, AppConfigs configs)
+        {
+            var config = configs.Default ?? new AppConfig();
+
+            var containerBuilder = new ContainerBuilder();
+
+            containerBuilder.RegisterType<BitBucketRepoCommand>();
+            containerBuilder.RegisterType<GlobalConfigCommand>();
+            containerBuilder.RegisterType<LocalRepoCommand>();
+            containerBuilder.RegisterType<RepoConfigCommand>();
+
+            containerBuilder.RegisterInstance(PipedInput.GetPipedInput());
+            containerBuilder.RegisterInstance(configs);
+            containerBuilder.RegisterInstance(config);
+            containerBuilder.RegisterInstance(new DirectoryResolver());
+            containerBuilder.RegisterType<BbService>();
+            containerBuilder.RegisterType<GitService>();
+
+            containerBuilder.RegisterBbApi(config);
+
+            var container = containerBuilder.Build();
+
+            return appRunner.UseAutofac(container);
+        }
+
+        private static void RegisterBbApi(this ContainerBuilder containerBuilder, AppConfig appConfig)
         {
             var bb = new SharpBucketV2();
-            bb.BasicAuthentication(appConfig.Username, appConfig.AppPassword);
+            switch (appConfig.AuthType)
+            {
+                case AppConfig.AuthTypes.Basic:
+                    bb.BasicAuthentication(appConfig.Username, appConfig.AppPassword);
+                    break;
+                case AppConfig.AuthTypes.OAuth:
+                    bb.OAuth1TwoLeggedAuthentication(appConfig.Username, appConfig.AppPassword);
+                    break;
+            }
             containerBuilder.RegisterInstance(bb);
         }
     }

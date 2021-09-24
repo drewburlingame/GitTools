@@ -1,15 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27703.2018
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31702.278
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BbGit", "BbGit\BbGit.csproj", "{63863304-2FB3-427B-9F9F-A49190074822}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{F09FD758-B890-4624-840E-6E21F7835B93}"
-	ProjectSection(SolutionItems) = preProject
-		paket.dependencies = paket.dependencies
-		paket.lock = paket.lock
-	EndProjectSection
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BbGit", "BbGit\BbGit.csproj", "{B2573511-353E-4F29-B2A1-6278DADC8A7E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +11,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{63863304-2FB3-427B-9F9F-A49190074822}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{63863304-2FB3-427B-9F9F-A49190074822}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{63863304-2FB3-427B-9F9F-A49190074822}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{63863304-2FB3-427B-9F9F-A49190074822}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2573511-353E-4F29-B2A1-6278DADC8A7E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2573511-353E-4F29-B2A1-6278DADC8A7E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2573511-353E-4F29-B2A1-6278DADC8A7E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2573511-353E-4F29-B2A1-6278DADC8A7E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -217,10 +217,9 @@ namespace BbGit.Git
 
         public LocalReposConfig GetLocalReposConfig()
         {
-            return this.localReposConfig
-                   ?? (this.localReposConfig =
-                       new FolderConfig(this.CurrentDirectory).GetJsonConfig<LocalReposConfig>(LocalReposConfigFileName)
-                   );
+            return this.localReposConfig ??= 
+                new FolderConfig(this.CurrentDirectory)
+                    .GetJsonConfig<LocalReposConfig>(LocalReposConfigFileName);
         }
 
         public void SaveLocalReposConfig(LocalReposConfig config)
