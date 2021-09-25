@@ -52,8 +52,7 @@ namespace BbGit
             containerBuilder.RegisterType<GlobalConfigCommand>();
             containerBuilder.RegisterType<LocalRepoCommand>();
             containerBuilder.RegisterType<RepoConfigCommand>();
-
-            containerBuilder.RegisterInstance(PipedInput.GetPipedInput());
+            
             containerBuilder.RegisterInstance(configs);
             containerBuilder.RegisterInstance(config);
             containerBuilder.RegisterInstance(new DirectoryResolver());
@@ -69,7 +68,7 @@ namespace BbGit
 
         private static void RegisterBbApi(this ContainerBuilder containerBuilder, AppConfig appConfig)
         {
-            var bb = new SharpBucketV2();
+            var bb = new SharpBucketV2(appConfig.BaseUrl);
             switch (appConfig.AuthType)
             {
                 case AppConfig.AuthTypes.Basic:

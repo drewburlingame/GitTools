@@ -26,6 +26,9 @@ namespace BbGit.ConsoleApp
 
         [Command(Description = "Lists projects that contain repositories")]
         public void Projects(
+            [Operand(
+                Description = "If specified, include only projects with these repos.")]
+            ICollection<string> onlyRepos,
             [Option(
                 ShortName = "u",
                 LongName = "uncloned",
@@ -45,9 +48,9 @@ namespace BbGit.ConsoleApp
             var localRepoNames = this.gitService.GetLocalRepoNames(includeIgnored, onlyIgnored).ToHashSet();
 
             var projects = new Dictionary<string, Tuple<string, List<Repository>>>();
-
+            
             foreach (var repo in this.bbService
-                .GetRepos(usePipedValuesIfAvailable: true, includeIgnored: includeIgnored, onlyIgnored: onlyIgnored)
+                .GetRepos(onlyRepos: onlyRepos, includeIgnored: includeIgnored, onlyIgnored: onlyIgnored)
                 .Where(r => !uncloned || !localRepoNames.Contains(r.name)))
             {
                 var value = projects.GetValueOrAdd(repo.project.key,
@@ -63,7 +66,7 @@ namespace BbGit.ConsoleApp
                     kvp.Value.Item1,
                     kvp.Value.Item2.Count.ToString()
                 })
-                .WriteTable(new[] {"key", "name", "repo count"});
+                .WriteTable(new[] { "key", "name", "repo count" });
         }
 
         [Command(Description = "List BitBucket repositories matching the search criteria")]

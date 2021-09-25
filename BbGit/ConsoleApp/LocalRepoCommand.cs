@@ -8,6 +8,7 @@ using BbGit.ConsoleUtils;
 using BbGit.Framework;
 using BbGit.Git;
 using CommandDotNet;
+using CommandDotNet.Rendering;
 using Console = Colorful.Console;
 
 namespace BbGit.ConsoleApp
@@ -28,6 +29,7 @@ namespace BbGit.ConsoleApp
 
         [Command(Description = "List local repositories matching the search criteria")]
         public void Repos(
+            IConsole console,
             [Option(
                 ShortName = "p",
                 LongName = "projects",
@@ -64,6 +66,8 @@ namespace BbGit.ConsoleApp
         {
             using (var localRepos = this.gitService.GetLocalRepos())
             {
+                console.WriteLine($"found {localRepos.Count} repos");
+
                 var repos = localRepos.AsEnumerable();
 
                 if (repoRegex != null)
@@ -149,6 +153,7 @@ namespace BbGit.ConsoleApp
 
         [Command(Description = "Clone all repositories matching the search criteria")]
         public void CloneAll(
+            OnlyReposOperandList onlyRepos,
             [Option(
                 ShortName = "p",
                 LongName = "projects",
@@ -157,7 +162,7 @@ namespace BbGit.ConsoleApp
             string projects,
             [Option] bool dryrun)
         {
-            var repositories = this.bbService.GetRepos(projects, true).ToList();
+            var repositories = this.bbService.GetRepos(projects, onlyRepos: onlyRepos.RepoNames).ToList();
 
             if (dryrun)
             {
@@ -177,11 +182,12 @@ namespace BbGit.ConsoleApp
         [Command(Description = "Pull all repositories in the parent directory.  " +
                                            "Piped input can be used to target specific repositories.")]
         public void PullAll(
+            OnlyReposOperandList onlyRepos,
             [Option] bool prune,
             [Option] bool dryrun,
             [Option] string branch = "master")
         {
-            using (var repositories = this.gitService.GetLocalRepos(true))
+            using (var repositories = this.gitService.GetLocalRepos(onlyRepos: onlyRepos.RepoNames))
             {
                 if (dryrun)
                 {
@@ -200,6 +206,7 @@ namespace BbGit.ConsoleApp
 
         [Command(Description = "Calls paket restore on all ")]
         public void Paket(
+            OnlyReposOperandList onlyRepos,
             [Option(ShortName = "i", LongName = "install")]
             bool install,
             [Option(ShortName = "r", LongName = "restore")]
@@ -229,7 +236,7 @@ namespace BbGit.ConsoleApp
                     Colors.DefaultColor);
             }
 
-            using (var repositories = this.gitService.GetLocalRepos(true))
+            using (var repositories = this.gitService.GetLocalRepos(onlyRepos.RepoNames))
             {
                 repositories.SafelyForEach(r =>
                 {

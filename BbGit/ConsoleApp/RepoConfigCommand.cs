@@ -34,8 +34,7 @@ namespace BbGit.ConsoleApp
         }
 
         [Command(
-            Description = "Set's configs for managing repositories located in the working directory. " +
-                          "Piped options are not filtered by ignore regex's. " +
+            Description = "Set's configs for managing repositories located in the working directory. \n" +
                           "To clear a string config, set it to \" \"")]
         public void Set(
             [Option(
@@ -112,11 +111,11 @@ namespace BbGit.ConsoleApp
             Description = "updates the BbGit configurations in the local repos",
             ExtendedHelpText = "use this when repositories were not cloned by BbGit " +
                                "or when using a new version of BbGit that uses updated configs.")]
-        public void LocalConfigsUpdate()
+        public void LocalConfigsUpdate(OnlyReposOperandList onlyRepos)
         {
-            var remoteRepos = this.bbService.GetRepos(usePipedValuesIfAvailable: true).ToList();
+            var remoteRepos = this.bbService.GetRepos(onlyRepos: onlyRepos.RepoNames).ToList();
 
-            using (var localRepos = this.gitService.GetLocalRepos(true))
+            using (var localRepos = this.gitService.GetLocalRepos(onlyRepos: onlyRepos.RepoNames))
             {
                 var joinedRepos = LeftJoinRepos(localRepos, remoteRepos).Where(j => j.remote != null);
 
@@ -131,9 +130,9 @@ namespace BbGit.ConsoleApp
         }
 
         [Command(Description = "removes the BbGit configurations and .bbgit folder from the local repos")]
-        public void LocalConfigsClear()
+        public void LocalConfigsClear(OnlyReposOperandList onlyRepos)
         {
-            using (var localRepos = this.gitService.GetLocalRepos(true))
+            using (var localRepos = this.gitService.GetLocalRepos(onlyRepos.RepoNames))
             {
                 localRepos.SafelyForEach(
                     j => this.gitService.ClearRepoConfigs(new LocalRepo(j)),

@@ -19,7 +19,6 @@ namespace BbGit.Git
 
         private readonly AppConfig appConfig;
         private readonly DirectoryResolver directoryResolver;
-        private readonly PipedInput pipedInput;
         private LocalReposConfig localReposConfig;
 
         private string CurrentDirectory => this.directoryResolver.CurrentDirectory;
@@ -27,11 +26,10 @@ namespace BbGit.Git
         private CredentialsHandler CredentialsProvider => (url, fromUrl, types) =>
             new UsernamePasswordCredentials {Username = this.appConfig.Username, Password = this.appConfig.AppPassword};
 
-        public GitService(AppConfig appConfig, DirectoryResolver directoryResolver, PipedInput pipedInput)
+        public GitService(AppConfig appConfig, DirectoryResolver directoryResolver)
         {
             this.appConfig = appConfig;
             this.directoryResolver = directoryResolver;
-            this.pipedInput = pipedInput;
         }
 
         public void CloneRepo(RemoteRepo remoteRepo)
@@ -186,13 +184,17 @@ namespace BbGit.Git
         }
 
         public DisposableColleciton<LocalRepo> GetLocalRepos(
-            bool usePipedValuesIfAvailable = false,
+            ICollection<string> onlyRepos = null,
             bool includeIgnored = false,
             bool onlyIgnored = false)
         {
-            var paths = usePipedValuesIfAvailable && this.pipedInput.HasValues
-                ? this.pipedInput.Values.Select(n => Path.Combine(this.CurrentDirectory, n))
-                : this.GetLocalDirectoryPaths();
+            var paths = GetLocalDirectoryPaths();
+
+            if (onlyRepos?.Any() ?? false)
+            {
+                var repoNameSet = onlyRepos.Select(n => Path.Combine(this.CurrentDirectory, n)).ToHashSet();
+                paths = paths.Where(repoNameSet.Contains);
+            }
 
             return paths
                 .Select(p => new LocalRepo(p))

@@ -14,7 +14,6 @@ namespace BbGit.BitBucket
         private readonly AppConfig appConfig;
         private readonly SharpBucketV2 bbApi;
         private readonly DirectoryResolver directoryResolver;
-        private readonly PipedInput pipedInput;
 
         private RemoteReposConfig remoteReposConfig;
 
@@ -23,18 +22,16 @@ namespace BbGit.BitBucket
         public BbService(
             SharpBucketV2 bbApi,
             AppConfig appConfig,
-            PipedInput pipedInput,
             DirectoryResolver directoryResolver)
         {
             this.bbApi = bbApi;
             this.appConfig = appConfig;
-            this.pipedInput = pipedInput;
             this.directoryResolver = directoryResolver;
         }
 
         public IEnumerable<Repository> GetRepos(
-            string projects = null,
-            bool usePipedValuesIfAvailable = false,
+            string projectNamePattern = null,
+            ICollection<string> onlyRepos = null,
             bool includeIgnored = false,
             bool onlyIgnored = false)
         {
@@ -45,16 +42,16 @@ namespace BbGit.BitBucket
                 .OrderBy(r => r.name)
                 .AsEnumerable();
 
-            if (projects != null)
+            if (projectNamePattern != null)
             {
                 repositories = repositories.Where(r =>
-                    Regex.IsMatch(r.project.key, $"^{projects}$".Replace(",", "$|^"), RegexOptions.IgnoreCase));
+                    Regex.IsMatch(r.project.key, $"^{projectNamePattern}$".Replace(",", "$|^"), RegexOptions.IgnoreCase));
             }
 
-            if (usePipedValuesIfAvailable && this.pipedInput.HasValues)
+            if (onlyRepos?.Any() ?? false)
             {
-                var set = this.pipedInput.Values.ToHashSet();
-                repositories = repositories.Where(r => set.Contains(r.name));
+                var repoNameSet = onlyRepos.ToHashSet();
+                repositories = repositories.Where(r => repoNameSet.Contains(r.name));
             }
 
             return repositories.ToList();
