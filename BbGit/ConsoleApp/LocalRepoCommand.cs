@@ -152,7 +152,7 @@ namespace BbGit.ConsoleApp
         }
 
         [Command(Description = "Clone all repositories matching the search criteria")]
-        public void CloneAll(
+        public async void CloneAll(
             OnlyReposOperandList onlyRepos,
             [Option(
                 ShortName = "p",
@@ -162,13 +162,13 @@ namespace BbGit.ConsoleApp
             string projects,
             [Option] bool dryrun)
         {
-            var repositories = this.bbService.GetRepos(projects, onlyRepos: onlyRepos.RepoNames).ToList();
+            var repositories = (await this.bbService.GetRepos(projects, onlyRepos: onlyRepos.RepoNames)).ToList();
 
             if (dryrun)
             {
                 repositories
-                    .OrderBy(r => r.name)
-                    .Select(r => $"{r.name} ({r.project.key})")
+                    .OrderBy(r => r.Slug)
+                    .Select(r => $"{r.Slug} ({r.Project.Key})")
                     .WriteTable();
             }
             else

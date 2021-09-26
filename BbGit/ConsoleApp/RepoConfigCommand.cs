@@ -6,9 +6,9 @@ using System.Linq;
 using BbGit.BitBucket;
 using BbGit.Framework;
 using BbGit.Git;
+using Bitbucket.Net.Models.Core.Projects;
 using CommandDotNet;
 using MoreLinq;
-using SharpBucket.V2.Pocos;
 
 namespace BbGit.ConsoleApp
 {
@@ -111,9 +111,9 @@ namespace BbGit.ConsoleApp
             Description = "updates the BbGit configurations in the local repos",
             ExtendedHelpText = "use this when repositories were not cloned by BbGit " +
                                "or when using a new version of BbGit that uses updated configs.")]
-        public void LocalConfigsUpdate(OnlyReposOperandList onlyRepos)
+        public async void LocalConfigsUpdate(OnlyReposOperandList onlyRepos)
         {
-            var remoteRepos = this.bbService.GetRepos(onlyRepos: onlyRepos.RepoNames).ToList();
+            var remoteRepos = (await this.bbService.GetRepos(onlyRepos: onlyRepos.RepoNames)).ToList();
 
             using (var localRepos = this.gitService.GetLocalRepos(onlyRepos: onlyRepos.RepoNames))
             {
@@ -148,7 +148,7 @@ namespace BbGit.ConsoleApp
                 .LeftJoin(
                     remoteRepos,
                     lr => lr.Name,
-                    rr => rr.name,
+                    rr => rr.Name,
                     lr => (lr, null),
                     (lr, rr) => (lr, rr))
                 .ToList();

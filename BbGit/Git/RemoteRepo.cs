@@ -1,5 +1,5 @@
 ﻿using System.Linq;
-using SharpBucket.V2.Pocos;
+using Bitbucket.Net.Models.Core.Projects;
 
 namespace BbGit.Git
 {
@@ -18,11 +18,11 @@ namespace BbGit.Git
 
         public RemoteRepo(Repository repository)
         {
-            this.Name = repository.name;
-            this.ProjectKey = repository.project.key;
-            this.ProjectName = repository.project.name;
-            this.HttpsUrl = repository.links.clone.FirstOrDefault(c => c.name == "https")?.href;
-            this.SshUrl = repository.links.clone.FirstOrDefault(c => c.name == "ssh")?.href;
+            this.Name = repository.Slug;
+            this.ProjectKey = repository.Project.Key;
+            this.ProjectName = repository.Project.Key;
+            this.HttpsUrl = repository.Links.Clone.FirstOrDefault(c => c.Name == "https")?.Href;
+            this.SshUrl = repository.Links.Clone.FirstOrDefault(c => c.Name == "ssh")?.Href;
         }
     }
 }

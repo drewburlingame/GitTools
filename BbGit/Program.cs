@@ -5,11 +5,11 @@ using BbGit.ConsoleApp;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;
 using BbGit.Git;
+using Bitbucket.Net;
 using CommandDotNet;
 using CommandDotNet.Diagnostics;
 using CommandDotNet.IoC.Autofac;
 using CommandDotNet.NameCasing;
-using SharpBucket.V2;
 
 namespace BbGit
 {
@@ -17,6 +17,8 @@ namespace BbGit
     {
         private static int Main(string[] args)
         {
+            AppDomain.CurrentDomain.UnhandledException += (sender, args) => ((Exception)args.ExceptionObject).Print();
+
             try
             {
                 var configs = AppConfigs.Load();
@@ -27,8 +29,7 @@ namespace BbGit
                     .UseErrorHandler((ctx, ex) =>
                     {
                         ctx.Console.Error.WriteLine(ctx.ToString());
-                        var exMsg = ex.Print(includeProperties: true, includeData: true, includeStackTrace: true);
-                        ctx.Console.Error.WriteLine(exMsg);
+                        ex.Print();
                         return ExitCodes.Error.Result;
                     })
                     .RegisterContainer(configs);
@@ -59,26 +60,28 @@ namespace BbGit
             containerBuilder.RegisterType<BbService>();
             containerBuilder.RegisterType<GitService>();
 
-            containerBuilder.RegisterBbApi(config);
+            containerBuilder.RegisterServerBbApi(config);
 
             var container = containerBuilder.Build();
 
             return appRunner.UseAutofac(container);
         }
 
-        private static void RegisterBbApi(this ContainerBuilder containerBuilder, AppConfig appConfig)
+        private static void RegisterServerBbApi(this ContainerBuilder containerBuilder, AppConfig appConfig)
         {
-            var bb = new SharpBucketV2(appConfig.BaseUrl);
+            BitbucketClient bbClient;
             switch (appConfig.AuthType)
             {
                 case AppConfig.AuthTypes.Basic:
-                    bb.BasicAuthentication(appConfig.Username, appConfig.AppPassword);
+                    bbClient = new BitbucketClient(appConfig.BaseUrl, appConfig.Username, appConfig.AppPassword);
                     break;
                 case AppConfig.AuthTypes.OAuth:
-                    bb.OAuth1TwoLeggedAuthentication(appConfig.Username, appConfig.AppPassword);
+                    bbClient = new BitbucketClient(appConfig.BaseUrl, () => appConfig.AppPassword);
                     break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
-            containerBuilder.RegisterInstance(bb);
+            containerBuilder.RegisterInstance(bbClient);
         }
     }
 }

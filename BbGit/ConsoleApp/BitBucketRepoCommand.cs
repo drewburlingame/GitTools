@@ -6,8 +6,8 @@ using BbGit.BitBucket;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;
 using BbGit.Git;
+using Bitbucket.Net.Models.Core.Projects;
 using CommandDotNet;
-using SharpBucket.V2.Pocos;
 using static MoreLinq.Extensions.ForEachExtension;
 
 namespace BbGit.ConsoleApp
@@ -24,11 +24,16 @@ namespace BbGit.ConsoleApp
             this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
         }
 
-        [Command(Description = "Lists projects that contain repositories")]
+        [Command(Description = "List projects from the server")]
+        public void Projects()
+        {
+            var projects = this.bbService.GetProjects().Result;
+        }
+
+        [Command(
+            Name = "projects-old", 
+            Description = "Lists projects based on repos from the server")]
         public void Projects(
-            [Operand(
-                Description = "If specified, include only projects with these repos.")]
-            ICollection<string> onlyRepos,
             [Option(
                 ShortName = "u",
                 LongName = "uncloned",
@@ -48,13 +53,13 @@ namespace BbGit.ConsoleApp
             var localRepoNames = this.gitService.GetLocalRepoNames(includeIgnored, onlyIgnored).ToHashSet();
 
             var projects = new Dictionary<string, Tuple<string, List<Repository>>>();
-            
-            foreach (var repo in this.bbService
-                .GetRepos(onlyRepos: onlyRepos, includeIgnored: includeIgnored, onlyIgnored: onlyIgnored)
-                .Where(r => !uncloned || !localRepoNames.Contains(r.name)))
+
+            var repos = this.bbService.GetRepos(includeIgnored: includeIgnored, onlyIgnored: onlyIgnored).Result;
+            foreach (var repo in repos
+                .Where(r => !uncloned || !localRepoNames.Contains(r.Slug)))
             {
-                var value = projects.GetValueOrAdd(repo.project.key,
-                    r => new Tuple<string, List<Repository>>(repo.project.name, new List<Repository>()));
+                var value = projects.GetValueOrAdd(repo.Project.Key,
+                    r => new Tuple<string, List<Repository>>(repo.Project.Key, new List<Repository>()));
                 value.Item2.Add(repo);
             }
 
@@ -70,7 +75,7 @@ namespace BbGit.ConsoleApp
         }
 
         [Command(Description = "List BitBucket repositories matching the search criteria")]
-        public void Repos(
+        public async void Repos(
             [Option(
                 ShortName = "p",
                 LongName = "projects",
@@ -107,33 +112,33 @@ namespace BbGit.ConsoleApp
         )
         {
             var localRepoNames = this.gitService.GetLocalRepoNames(includeIgnored, onlyIgnored).ToHashSet();
-            var bbRepos = this.bbService.GetRepos(projects, includeIgnored: includeIgnored, onlyIgnored: onlyIgnored);
+            var bbRepos = await this.bbService.GetRepos(projects, includeIgnored: includeIgnored, onlyIgnored: onlyIgnored);
 
             if (repoRegex != null)
             {
                 var regex = new Regex(repoRegex, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                bbRepos = bbRepos.Where(r => regex.IsMatch(r.name));
+                bbRepos = bbRepos.Where(r => regex.IsMatch(r.Slug));
             }
 
             if (uncloned)
             {
-                bbRepos = bbRepos.Where(r => !localRepoNames.Contains(r.name));
+                bbRepos = bbRepos.Where(r => !localRepoNames.Contains(r.Slug));
             }
 
             if (showTable)
             {
                 if (showProjectInfo)
                 {
-                    bbRepos.OrderBy(r => r.name).Select(r => new[] {r.name, r.project.key}).WriteTable();
+                    bbRepos.OrderBy(r => r.Slug).Select(r => new[] {r.Slug, r.Project.Key}).WriteTable();
                 }
                 else
                 {
-                    bbRepos.OrderBy(r => r.name).Select(r => $"{r.name}").WriteTable();
+                    bbRepos.OrderBy(r => r.Slug).Select(r => $"{r.Slug}").WriteTable();
                 }
             }
             else
             {
-                bbRepos.ForEach(r => Console.Out.WriteLine(r.name));
+                bbRepos.ForEach(r => Console.Out.WriteLine(r.Slug));
             }
         }
     }

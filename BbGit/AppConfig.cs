@@ -13,5 +13,6 @@
         public string AppPassword { get; set; }
         public string DefaultAccount { get; set; }
         public bool SetOriginToSsh { get; set; }
+        public string BaseUrl { get; set; }
     }
 }

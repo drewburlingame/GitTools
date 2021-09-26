@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using BbGit.Framework;
-using SharpBucket.V2;
-using SharpBucket.V2.Pocos;
+using Bitbucket.Net;
+using Bitbucket.Net.Models.Core.Projects;
 
 namespace BbGit.BitBucket
 {
@@ -12,7 +13,7 @@ namespace BbGit.BitBucket
     {
         private const string RemoteReposConfigFileName = "remoteRepos";
         private readonly AppConfig appConfig;
-        private readonly SharpBucketV2 bbApi;
+        private readonly BitbucketClient bbServerClient;
         private readonly DirectoryResolver directoryResolver;
 
         private RemoteReposConfig remoteReposConfig;
@@ -20,38 +21,44 @@ namespace BbGit.BitBucket
         private string CurrentDirectory => this.directoryResolver.CurrentDirectory;
 
         public BbService(
-            SharpBucketV2 bbApi,
+            BitbucketClient bbServerClient,
             AppConfig appConfig,
             DirectoryResolver directoryResolver)
         {
-            this.bbApi = bbApi;
+            this.bbServerClient = bbServerClient;
             this.appConfig = appConfig;
             this.directoryResolver = directoryResolver;
         }
 
-        public IEnumerable<Repository> GetRepos(
+        public async Task<IEnumerable<Project>> GetProjects()
+        {
+            return (await this.bbServerClient.GetProjectsAsync())
+                .Select(p => new Project(bbServerClient, p));
+        }
+
+        public async Task<IEnumerable<Repository>> GetRepos(
             string projectNamePattern = null,
             ICollection<string> onlyRepos = null,
             bool includeIgnored = false,
             bool onlyIgnored = false)
         {
-            var repositories = this.bbApi.RepositoriesEndPoint()
-                .RepositoriesResource(this.appConfig.DefaultAccount)
-                .EnumerateRepositories()
+            var repos = await this.bbServerClient.GetRepositoriesAsync();
+
+            var repositories = repos
                 .Where(repo => this.Include(includeIgnored, onlyIgnored, repo))
-                .OrderBy(r => r.name)
+                .OrderBy(r => r.Slug)
                 .AsEnumerable();
 
             if (projectNamePattern != null)
             {
                 repositories = repositories.Where(r =>
-                    Regex.IsMatch(r.project.key, $"^{projectNamePattern}$".Replace(",", "$|^"), RegexOptions.IgnoreCase));
+                    Regex.IsMatch(r.Project.Key, $"^{projectNamePattern}$".Replace(",", "$|^"), RegexOptions.IgnoreCase));
             }
 
             if (onlyRepos?.Any() ?? false)
             {
                 var repoNameSet = onlyRepos.ToHashSet();
-                repositories = repositories.Where(r => repoNameSet.Contains(r.name));
+                repositories = repositories.Where(r => repoNameSet.Contains(r.Slug));
             }
 
             return repositories.ToList();
@@ -94,8 +101,8 @@ namespace BbGit.BitBucket
                 return true;
             }
 
-            var repoIsIgnored = hasIgnoreRepoRegex && Regex.IsMatch(repo.name, ignoreRepoRegex);
-            var projIsIgnored = hasIgnoreProjRegex && Regex.IsMatch(repo.project.key, ignoreProjRegex);
+            var repoIsIgnored = hasIgnoreRepoRegex && Regex.IsMatch(repo.Slug, ignoreRepoRegex);
+            var projIsIgnored = hasIgnoreProjRegex && Regex.IsMatch(repo.Project.Key, ignoreProjRegex);
 
             return onlyIgnored
                 ? repoIsIgnored || projIsIgnored
@@ -110,7 +117,7 @@ namespace BbGit.BitBucket
                 return true;
             }
 
-            return Regex.IsMatch(repo.name, ignoredReposRegex);
+            return Regex.IsMatch(repo.Slug, ignoredReposRegex);
         }
 
         private bool ProjectIsIgnored(Repository repo)
@@ -121,7 +128,7 @@ namespace BbGit.BitBucket
                 return true;
             }
 
-            return Regex.IsMatch(repo.project.key, ignoredProjectsRegex);
+            return Regex.IsMatch(repo.Project.Key, ignoredProjectsRegex);
         }
     }
 }
