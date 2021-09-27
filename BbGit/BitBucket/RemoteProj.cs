@@ -1,22 +1,23 @@
 ﻿using System.Linq;
 using Bitbucket.Net.Models.Core.Projects;
-using bbProj=Bitbucket.Net.Models.Core.Projects.Project;
 
 namespace BbGit.BitBucket
 {
-    public class Project
+    public class RemoteProj
     {
-        private readonly bbProj bbProj;
+        private readonly Project bbProj;
 
-        public Project()
+        public RemoteProj()
         {
-            this.bbProj = new bbProj();
+            this.bbProj = new Project();
         }
 
-        public Project(bbProj bbProj)
+        public RemoteProj(Project bbProj)
         {
             this.bbProj = bbProj;
         }
+
+        public string LinkToSelf => bbProj.Links.Self.First().Href;
 
         #region bbProj delegated members
 
@@ -63,7 +64,5 @@ namespace BbGit.BitBucket
         }
 
         #endregion
-
-        public string LinkToSelf => bbProj.Links.Self.First().Href;
     }
 }

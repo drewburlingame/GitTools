@@ -5,14 +5,14 @@ using System.Collections.ObjectModel;
 
 namespace BbGit.Framework
 {
-    public class DisposableColleciton<T> : ICollection<T>, IDisposable where T : IDisposable
+    public class DisposableCollection<T> : ICollection<T>, IDisposable where T : IDisposable
     {
         private ICollection<T> innerCollection;
         private bool isDisposing;
 
-        public static DisposableColleciton<T> Empty => new DisposableColleciton<T>(new Collection<T>());
+        public static DisposableCollection<T> Empty => new DisposableCollection<T>(new Collection<T>());
 
-        public DisposableColleciton(ICollection<T> innerCollection)
+        public DisposableCollection(ICollection<T> innerCollection)
         {
             this.innerCollection = innerCollection;
         }

@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using BbGit.Framework;
+using BbGit.Git;
 using Bitbucket.Net;
 using Bitbucket.Net.Models.Core.Projects;
 
@@ -30,15 +32,37 @@ namespace BbGit.BitBucket
             this.directoryResolver = directoryResolver;
         }
 
-        public IEnumerable<Project> GetProjects()
+        public IEnumerable<RemoteProj> GetProjects()
         {
             return GetProjectsAsync().Result;
         }
 
-        public async Task<IEnumerable<Project>> GetProjectsAsync()
+        public async Task<IEnumerable<RemoteProj>> GetProjectsAsync()
         {
             return (await this.bbServerClient.GetProjectsAsync())
-                .Select(p => new Project(bbServerClient, p));
+                .Select(p => new RemoteProj(p));
+        }
+
+        public IEnumerable<RemoteRepo> GetRepos(string projectName = null)
+        {
+            return GetReposAsync().Result;
+        }
+
+        public async Task<IEnumerable<RemoteRepo>> GetReposAsync(string projectName = null)
+        {
+            var privateRepos = await this.bbServerClient.GetRepositoriesAsync(projectName: projectName);
+            var publicRepos = await this.bbServerClient.GetRepositoriesAsync(projectName: projectName, isPublic: true);
+            return privateRepos.Concat(publicRepos).Select(p => new RemoteRepo(p));
+        }
+
+        public IEnumerable<RemoteRepo> GetRepos(ICollection<string> projectNames)
+        {
+            return GetReposAsync(projectNames).Result;
+        }
+
+        public async Task<IEnumerable<RemoteRepo>> GetReposAsync(ICollection<string> projectNames)
+        {
+            return await projectNames.SelectManyAsync(GetReposAsync);
         }
 
         public async Task<IEnumerable<Repository>> GetRepos(

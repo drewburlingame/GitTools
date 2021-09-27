@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Threading.Tasks;
 using BbGit.ConsoleUtils;
 using BbGit.Git;
 using Colorful;
@@ -21,10 +22,16 @@ namespace BbGit.Framework
             return enumerable is ICollection<T> coll ? coll : enumerable.ToList();
         }
 
-        public static DisposableColleciton<T> ToDisposableCollection<T>(this IEnumerable<T> items) where T : IDisposable
+        public static DisposableCollection<T> ToDisposableCollection<T>(this IEnumerable<T> items) where T : IDisposable
         {
             var collection = items as ICollection<T> ?? items.ToList();
-            return new DisposableColleciton<T>(collection);
+            return new DisposableCollection<T>(collection);
+        }
+
+        public static async Task<IEnumerable<T1>> SelectManyAsync<T, T1>(this IEnumerable<T> enumeration, Func<T, Task<IEnumerable<T1>>> func)
+        {
+            // TODO: throttle requests in batches
+            return (await Task.WhenAll(enumeration.Select(func))).SelectMany(s => s);
         }
 
         public static void SafelyForEach(

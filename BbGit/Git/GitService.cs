@@ -183,7 +183,7 @@ namespace BbGit.Git
                 .ToList();
         }
 
-        public DisposableColleciton<LocalRepo> GetLocalRepos(
+        public DisposableCollection<LocalRepo> GetLocalRepos(
             ICollection<string> onlyRepos = null,
             bool includeIgnored = false,
             bool onlyIgnored = false)
@@ -245,7 +245,7 @@ namespace BbGit.Git
         {
             if (string.IsNullOrWhiteSpace(this.GetLocalReposConfig().IgnoredReposRegex))
             {
-                return true;
+                return false;
             }
 
             return Regex.IsMatch(repoName, this.GetLocalReposConfig().IgnoredReposRegex);

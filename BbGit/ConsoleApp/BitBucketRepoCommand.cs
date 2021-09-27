@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using BbGit.BitBucket;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;
@@ -10,9 +9,7 @@ using BbGit.Git;
 using Bitbucket.Net.Models.Core.Projects;
 using CommandDotNet;
 using CommandDotNet.Rendering;
-using ConsoleTables;
 using static MoreLinq.Extensions.ForEachExtension;
-using Project = BbGit.BitBucket.Project;
 
 namespace BbGit.ConsoleApp
 {
@@ -29,14 +26,17 @@ namespace BbGit.ConsoleApp
         }
 
         [Command(
-            Description = "List projects from the server", 
-            ExtendedHelpText = "for regex flags, see https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-options")]
+            Description = "List projects from the server",
+            ExtendedHelpText =
+                "for regex flags, see https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-options")]
         public void Projects(IConsole console,
             TableFormatModel tableFormatModel,
-            [Option(ShortName = "n")] 
+            [Option(ShortName = "n", Description = "regex to match name")]
             string namePattern = null,
-            [Option(ShortName = "d")] 
-            string descPattern = null)
+            [Option(ShortName = "d", Description = "regex to match description")]
+            string descPattern = null,
+            [Option(ShortName = "r", LongName = "repos", Description = "include the count repositories")]
+            bool includeRepoCounts = false)
         {
             var nameRegex = namePattern.IsNullOrEmpty() ? null : new Regex(namePattern, RegexOptions.Compiled);
             var descRegex = descPattern.IsNullOrEmpty() ? null : new Regex(descPattern, RegexOptions.Compiled);
@@ -45,9 +45,45 @@ namespace BbGit.ConsoleApp
                 .GetProjects()
                 .Where(p => nameRegex is null || nameRegex.IsMatch(p.Name))
                 .Where(p => descRegex is null || (p.Description is not null && descRegex.IsMatch(p.Description)))
-                .Select(p => new {p.Key, p.Name, p.Description, p.Id, p.Public, p.Type})
+                .OrderBy(p => p.Key)
                 .ToCollection();
-            console.WriteTable(tableFormatModel, projects, p => p.Key);
+
+            if (includeRepoCounts)
+            {
+                if (tableFormatModel.Table == TableFormatModel.TableFormat.k)
+                {
+                    console.Error.WriteLine("Repository counts will not be shown when only keys will be output");
+                    console.Error.WriteLine("Do not include repository counts or do not set the table format to 'k'");
+                }
+                
+                var localRepos = this.gitService.GetLocalRepos()
+                    .Select(r => r.Name)
+                    .ToHashSet();
+                
+                var remoteRepoCounts = this.bbService
+                    .GetRepos(projects.Select(p => p.Name).ToCollection())
+                    .Select(r => new {r.ProjectKey, r.Name, HasLocal=localRepos.Contains(r.Slug)})
+                    .GroupBy(p => p.ProjectKey)
+                    .ToDictionary(
+                        g => g.Key, 
+                        g => new {remote= g.Count(), local=g.Count(r => r.HasLocal)});
+
+                console.WriteTable(tableFormatModel,
+                    projects
+                        .Select(p => new
+                        {
+                            p.Key, p.Name, p.Description, p.Id, p.Public, p.Type,
+                            RemoteRepos = remoteRepoCounts[p.Key].remote, 
+                            LocalRepos = remoteRepoCounts[p.Key].local
+                        }),
+                    null);
+            }
+            else
+            {
+                console.WriteTable(tableFormatModel, 
+                    projects.Select(p => new { p.Key, p.Name, p.Description, p.Id, p.Public, p.Type }), 
+                    p => p.Key);
+            }
         }
 
         [Command(

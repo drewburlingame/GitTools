@@ -119,7 +119,7 @@ namespace BbGit.Git
                 this.IsGitDir = IsGitDirectory(this.FullPath);
                 if (this.IsGitDir)
                 {
-                    this.GitRepo = this.GitRepo ?? new Repository(this.FullPath);
+                    this.GitRepo ??= new Repository(this.FullPath);
                 }
             }
         }
@@ -128,7 +128,8 @@ namespace BbGit.Git
         {
             try
             {
-                return Directory.GetDirectories(directoryPath, ".git", SearchOption.TopDirectoryOnly).Any();
+                var directories = Directory.GetDirectories(directoryPath, ".git", SearchOption.TopDirectoryOnly);
+                return directories.Any();
             }
             catch (Exception e)
             {
