@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 using System.Text.RegularExpressions;
 using BbGit.BitBucket;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;
 using BbGit.Git;
-using Bitbucket.Net.Models.Core.Projects;
 using CommandDotNet;
 using CommandDotNet.Rendering;
 using static MoreLinq.Extensions.ForEachExtension;
@@ -45,7 +44,7 @@ namespace BbGit.ConsoleApp
                 .GetProjects()
                 .Where(p => nameRegex is null || nameRegex.IsMatch(p.Name))
                 .Where(p => descRegex is null || (p.Description is not null && descRegex.IsMatch(p.Description)))
-                .OrderBy(p => p.Key)
+                .OrderBy(p => p.Name)
                 .ToCollection();
 
             if (includeRepoCounts)
@@ -55,26 +54,27 @@ namespace BbGit.ConsoleApp
                     console.Error.WriteLine("Repository counts will not be shown when only keys will be output");
                     console.Error.WriteLine("Do not include repository counts or do not set the table format to 'k'");
                 }
-                
-                var localRepos = this.gitService.GetLocalRepos()
-                    .Select(r => r.Name)
-                    .ToHashSet();
-                
-                var remoteRepoCounts = this.bbService
-                    .GetRepos(projects.Select(p => p.Name).ToCollection())
-                    .Select(r => new {r.ProjectKey, r.Name, HasLocal=localRepos.Contains(r.Slug)})
-                    .GroupBy(p => p.ProjectKey)
+
+                var localRepos = this.gitService.GetLocalRepos();
+
+                var remoteRepos = this.bbService
+                    .GetRepos(projects.Select(p => p.Name).ToCollection());
+
+                var repoPairs = localRepos.PairRepos(remoteRepos, mustHaveRemote: true).Values;
+
+                var remoteRepoCounts = repoPairs
+                    .GroupBy(p => p.Remote.ProjectKey)
                     .ToDictionary(
                         g => g.Key, 
-                        g => new {remote= g.Count(), local=g.Count(r => r.HasLocal)});
+                        g => new {remote=g.Count(), local=g.Count(r => r.Local is not null)});
 
                 console.WriteTable(tableFormatModel,
                     projects
                         .Select(p => new
                         {
                             p.Key, p.Name, p.Description, p.Id, p.Public, p.Type,
-                            RemoteRepos = remoteRepoCounts[p.Key].remote, 
-                            LocalRepos = remoteRepoCounts[p.Key].local
+                            RemoteRepos = remoteRepoCounts.GetValueOrDefault(p.Key)?.remote ?? 0,
+                            LocalRepos = remoteRepoCounts.GetValueOrDefault(p.Key)?.local ?? 0
                         }),
                     null);
             }
@@ -84,50 +84,6 @@ namespace BbGit.ConsoleApp
                     projects.Select(p => new { p.Key, p.Name, p.Description, p.Id, p.Public, p.Type }), 
                     p => p.Key);
             }
-        }
-
-        [Command(
-            Name = "projects-old", 
-            Description = "Lists projects based on repos from the server")]
-        public void Projects(
-            [Option(
-                ShortName = "u",
-                LongName = "uncloned",
-                Description = "filters out repositories that have already been cloned.")]
-            bool uncloned,
-            [Option(
-                ShortName = "i",
-                LongName = "includeIgnored",
-                Description = "includes projects ignored in configuration")]
-            bool includeIgnored,
-            [Option(
-                ShortName = "I",
-                LongName = "onlyIgnored",
-                Description = "lists only projects ignored in configuration")]
-            bool onlyIgnored)
-        {
-            var localRepoNames = this.gitService.GetLocalRepoNames(includeIgnored, onlyIgnored).ToHashSet();
-
-            var projects = new Dictionary<string, Tuple<string, List<Repository>>>();
-
-            var repos = this.bbService.GetRepos(includeIgnored: includeIgnored, onlyIgnored: onlyIgnored).Result;
-            foreach (var repo in repos
-                .Where(r => !uncloned || !localRepoNames.Contains(r.Slug)))
-            {
-                var value = projects.GetValueOrAdd(repo.Project.Key,
-                    r => new Tuple<string, List<Repository>>(repo.Project.Key, new List<Repository>()));
-                value.Item2.Add(repo);
-            }
-
-            projects
-                .OrderBy(kvp => kvp.Key)
-                .Select(kvp => new[]
-                {
-                    kvp.Key,
-                    kvp.Value.Item1,
-                    kvp.Value.Item2.Count.ToString()
-                })
-                .WriteTable(new[] { "key", "name", "repo count" });
         }
 
         [Command(Description = "List BitBucket repositories matching the search criteria")]

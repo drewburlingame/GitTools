@@ -20,11 +20,13 @@ namespace BbGit.Framework
         internal static TValue GetValueOrAdd<TKey, TValue>(
             this IDictionary<TKey, TValue> dict,
             TKey key,
-            Func<TKey, TValue> valueProvider)
+            Func<TKey, TValue> valueProvider = null)
         {
             if (!dict.TryGetValue(key, out var value))
             {
-                dict[key] = value = valueProvider(key);
+                dict[key] = value = valueProvider is null 
+                    ? Activator.CreateInstance<TValue>() 
+                    : valueProvider(key);
             }
 
             return value;
