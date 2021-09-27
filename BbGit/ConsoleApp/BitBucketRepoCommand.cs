@@ -2,13 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using BbGit.BitBucket;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;
 using BbGit.Git;
 using Bitbucket.Net.Models.Core.Projects;
 using CommandDotNet;
+using CommandDotNet.Rendering;
+using ConsoleTables;
 using static MoreLinq.Extensions.ForEachExtension;
+using Project = BbGit.BitBucket.Project;
 
 namespace BbGit.ConsoleApp
 {
@@ -24,10 +28,26 @@ namespace BbGit.ConsoleApp
             this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
         }
 
-        [Command(Description = "List projects from the server")]
-        public void Projects()
+        [Command(
+            Description = "List projects from the server", 
+            ExtendedHelpText = "for regex flags, see https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-options")]
+        public void Projects(IConsole console,
+            TableFormatModel tableFormatModel,
+            [Option(ShortName = "n")] 
+            string namePattern = null,
+            [Option(ShortName = "d")] 
+            string descPattern = null)
         {
-            var projects = this.bbService.GetProjects().Result;
+            var nameRegex = namePattern.IsNullOrEmpty() ? null : new Regex(namePattern, RegexOptions.Compiled);
+            var descRegex = descPattern.IsNullOrEmpty() ? null : new Regex(descPattern, RegexOptions.Compiled);
+
+            var projects = this.bbService
+                .GetProjects()
+                .Where(p => nameRegex is null || nameRegex.IsMatch(p.Name))
+                .Where(p => descRegex is null || (p.Description is not null && descRegex.IsMatch(p.Description)))
+                .Select(p => new {p.Key, p.Name, p.Description, p.Id, p.Public, p.Type})
+                .ToCollection();
+            console.WriteTable(tableFormatModel, projects, p => p.Key);
         }
 
         [Command(

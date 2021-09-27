@@ -1,4 +1,5 @@
-﻿using BbGit.Framework;
+﻿using System.Threading.Tasks;
+using BbGit.Framework;
 using CommandDotNet;
 
 namespace BbGit.ConsoleApp

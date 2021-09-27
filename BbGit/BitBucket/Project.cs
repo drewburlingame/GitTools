@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Bitbucket.Net;
+﻿using System.Linq;
 using Bitbucket.Net.Models.Core.Projects;
 using bbProj=Bitbucket.Net.Models.Core.Projects.Project;
 
@@ -9,12 +6,15 @@ namespace BbGit.BitBucket
 {
     public class Project
     {
-        private readonly BitbucketClient bbClient;
         private readonly bbProj bbProj;
 
-        public Project(BitbucketClient bbClient, bbProj bbProj)
+        public Project()
         {
-            this.bbClient = bbClient;
+            this.bbProj = new bbProj();
+        }
+
+        public Project(bbProj bbProj)
+        {
             this.bbProj = bbProj;
         }
 
@@ -65,10 +65,5 @@ namespace BbGit.BitBucket
         #endregion
 
         public string LinkToSelf => bbProj.Links.Self.First().Href;
-
-        public Task<IEnumerable<Repository>> GetRepos()
-        {
-            return bbClient.GetProjectRepositoriesAsync(Key);
-        }
     }
 }

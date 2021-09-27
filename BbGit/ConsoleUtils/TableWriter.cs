@@ -1,13 +1,52 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using BbGit.ConsoleApp;
 using BbGit.Framework;
+using CommandDotNet;
+using CommandDotNet.Rendering;
+using ConsoleTables;
 using MoreLinq;
 
 namespace BbGit.ConsoleUtils
 {
     public static class TableWriter
     {
+        public static void WriteTable<T>(this IConsole console, 
+            TableFormatModel model, IEnumerable<T> records,
+            Func<T, object> keysSelector)
+        {
+            if (model.Table == TableFormatModel.TableFormat.k)
+            {
+                records.ForEach(r => console.WriteLine(keysSelector(r)));
+                return;
+            }
+
+            var table = ConsoleTable.From(records);
+            table.Configure(o => o.NumberAlignment = Alignment.Right);
+
+            Format format;
+
+            switch (model.Table)
+            {
+                case TableFormatModel.TableFormat.s:
+                    format = Format.Minimal;
+                    break;
+                case TableFormatModel.TableFormat.g:
+                    table.Configure(o => o.EnableCount = true);
+                    format = Format.Default;
+                    break;
+                case TableFormatModel.TableFormat.m:
+                    format = Format.MarkDown;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException($"unknown TableFormat: {model.Table}");
+            }
+
+            // TODO: output to IConsole
+            table.Write(format);
+        }
+
         /// <summary></summary>
         public static void WriteTable(
             this IEnumerable<string> rows,

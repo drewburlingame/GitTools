@@ -203,7 +203,7 @@ namespace BbGit.Git
                                 || onlyIgnored && this.RepoIsIgnored(r.Name)
                                 || !this.RepoIsIgnored(r.Name)))
                 .OrderBy(r => r.Name)
-                .ToDisposableColleciton();
+                .ToDisposableCollection();
 
             // I haven't figured out why, but Libgit2Object.Dispose throws an 
             //   AccessViolationException - Attempted to read or write protected memory

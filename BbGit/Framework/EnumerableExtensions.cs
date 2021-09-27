@@ -16,21 +16,15 @@ namespace BbGit.Framework
         {
             return enumerable == null || !enumerable.Any();
         }
+        public static ICollection<T> ToCollection<T>(this IEnumerable<T> enumerable)
+        {
+            return enumerable is ICollection<T> coll ? coll : enumerable.ToList();
+        }
 
-        public static DisposableColleciton<T> ToDisposableColleciton<T>(this IEnumerable<T> items) where T : IDisposable
+        public static DisposableColleciton<T> ToDisposableCollection<T>(this IEnumerable<T> items) where T : IDisposable
         {
             var collection = items as ICollection<T> ?? items.ToList();
             return new DisposableColleciton<T>(collection);
-        }
-
-        public static T SafeFromIndex<T>(this IList<T> items, int index)
-        {
-            return items.Count > index ? items[index] : default(T);
-        }
-
-        public static T SafeFromIndex<T>(this T[] items, int index)
-        {
-            return items.Length > index ? items[index] : default(T);
         }
 
         public static void SafelyForEach(
@@ -107,39 +101,9 @@ namespace BbGit.Framework
             }
         }
 
-        internal static HashSet<T> ToSet<T>(this IEnumerable<T> enumerable)
-        {
-            return new HashSet<T>(enumerable);
-        }
-
         internal static string ToCsv<T>(this IEnumerable<T> values, string separator = ",")
         {
             return string.Join(separator, values);
-        }
-
-        internal static TValue GetValueOrDefault<TKey, TValue>(
-            this IDictionary<TKey, TValue> dict,
-            TKey key,
-            Func<TKey, TValue> defaultProvider = null)
-        {
-            return dict.TryGetValue(key, out var value)
-                ? value
-                : defaultProvider == null
-                    ? default(TValue)
-                    : defaultProvider(key);
-        }
-
-        internal static TValue GetValueOrAdd<TKey, TValue>(
-            this IDictionary<TKey, TValue> dict,
-            TKey key,
-            Func<TKey, TValue> valueProvider)
-        {
-            if (!dict.TryGetValue(key, out var value))
-            {
-                dict[key] = value = valueProvider(key);
-            }
-
-            return value;
         }
     }
 }

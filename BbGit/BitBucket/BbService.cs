@@ -30,7 +30,12 @@ namespace BbGit.BitBucket
             this.directoryResolver = directoryResolver;
         }
 
-        public async Task<IEnumerable<Project>> GetProjects()
+        public IEnumerable<Project> GetProjects()
+        {
+            return GetProjectsAsync().Result;
+        }
+
+        public async Task<IEnumerable<Project>> GetProjectsAsync()
         {
             return (await this.bbServerClient.GetProjectsAsync())
                 .Select(p => new Project(bbServerClient, p));
