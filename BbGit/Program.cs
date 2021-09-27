@@ -7,7 +7,6 @@ using BbGit.Framework;
 using BbGit.Git;
 using Bitbucket.Net;
 using CommandDotNet;
-using CommandDotNet.Diagnostics;
 using CommandDotNet.IoC.Autofac;
 using CommandDotNet.NameCasing;
 
@@ -26,6 +25,7 @@ namespace BbGit
                 var appRunner = new AppRunner<GitApplication>()
                     .UseDefaultMiddleware(excludePrompting: true)
                     .UseNameCasing(Case.KebabCase)
+                    .UseTimerDirective()
                     .UseErrorHandler((ctx, ex) =>
                     {
                         ctx.Console.Error.WriteLine(ctx.ToString());
