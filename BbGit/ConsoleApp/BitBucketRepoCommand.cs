@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using BbGit.BitBucket;
 using BbGit.Framework;
@@ -153,81 +152,6 @@ namespace BbGit.ConsoleApp
                     });
                 new Table(console, tableFormatModel?.GetTheme(), includeCount: true)
                     .Write(rows);
-            }
-        }
-
-        [Command(
-            Name = "repos2",
-            Description = "List BitBucket repositories matching the search criteria")]
-        public async void Repos(IConsole console,
-            [Option(
-                ShortName = "p",
-                LongName = "projects",
-                Description = "comma-separated list of project keys to filter by")]
-            string projects,
-            [Option(
-                ShortName = "T",
-                Description = "display additional info in a table format")]
-            bool showTable,
-            [Option(
-                ShortName = "P",
-                Description = "show project information")]
-            bool showProjectInfo,
-            [Option(
-                ShortName = "r",
-                LongName = "repo",
-                Description = "regex to filter repo name by")]
-            string repoRegex,
-            [Option(
-                ShortName = "u",
-                LongName = "uncloned",
-                Description = "filters out repositories that have already been cloned.")]
-            bool uncloned,
-            [Option(
-                ShortName = "i",
-                LongName = "includeIgnored",
-                Description = "includes projects ignored in configuration")]
-            bool includeIgnored,
-            [Option(
-                ShortName = "I",
-                LongName = "onlyIgnored",
-                Description = "lists only projects ignored in configuration")]
-            bool onlyIgnored)
-        {
-            var localRepoNames = this.gitService.GetLocalRepoNames(includeIgnored, onlyIgnored).ToHashSet();
-            var bbRepos = await this.bbService.GetRepos(projects, includeIgnored: includeIgnored, onlyIgnored: onlyIgnored);
-
-            if (repoRegex != null)
-            {
-                var regex = new Regex(repoRegex, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                bbRepos = bbRepos.Where(r => regex.IsMatch(r.Slug));
-            }
-
-            if (uncloned)
-            {
-                bbRepos = bbRepos.Where(r => !localRepoNames.Contains(r.Slug));
-            }
-
-            if (showTable)
-            {
-                if (showProjectInfo)
-                {
-                    IEnumerable<string[]> records = bbRepos
-                        .OrderBy(r => r.Slug)
-                        .Select(r => new[] {r.Slug, r.Project.Key});
-                    new Table(console, includeCount: true).Write(records);
-                }
-                else
-                {
-                    IEnumerable<string> records = bbRepos
-                        .OrderBy(r => r.Slug)
-                        .Select(r => r.Slug);
-                    new Table(console, includeCount: true).Write(records);
-                }
-            }
-            else
-            {
-                bbRepos.ForEach(r => Console.Out.WriteLine(r.Slug));
             }
         }
     }
