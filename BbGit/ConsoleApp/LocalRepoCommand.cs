@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -7,6 +8,7 @@ using BbGit.BitBucket;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;
 using BbGit.Git;
+using BbGit.Tables;
 using CommandDotNet;
 using CommandDotNet.Rendering;
 using Console = Colorful.Console;
@@ -118,31 +120,35 @@ namespace BbGit.ConsoleApp
 
                 if (showTable)
                 {
-                    var headers = showProjectInfo
-                        ? new[] {"repo", "project", "changes", "branches", "stashes", "branch"}
-                        : new[] {"repo", "changes", "branches", "stashes", "branch"};
+                    filteredRepos.Where(l => projects == null || l.RemoteRepo != null);
 
-                    filteredRepos
-                        .Where(l => projects == null || l.RemoteRepo != null)
-                        .Select(l => showProjectInfo
-                            ? new[]
-                            {
-                                l.Name,
-                                l.RemoteRepo?.ProjectKey,
-                                CountToString(l.LocalChangesCount),
-                                CountToString(l.LocalBranchCount),
-                                CountToString(l.StashCount),
-                                l.IsInLocalBranch ? l.CurrentBranchName : ""
-                            }
-                            : new[]
-                            {
-                                l.Name,
-                                CountToString(l.LocalChangesCount),
-                                CountToString(l.LocalBranchCount),
-                                CountToString(l.StashCount),
-                                l.IsInLocalBranch ? l.CurrentBranchName : ""
-                            })
-                        .WriteTable(headers);
+                    if (showProjectInfo)
+                    {
+                        var records = filteredRepos.Select(l => new
+                        {
+                            repo = l.Name,
+                            project = l.RemoteRepo?.ProjectKey,
+                            changes = CountToString(l.LocalChangesCount),
+                            branches = CountToString(l.LocalBranchCount),
+                            stashes = CountToString(l.StashCount),
+                            branch = l.IsInLocalBranch ? l.CurrentBranchName : ""
+                        });
+                        new Table(console, ((TableFormatModel)null)?.GetTheme(), includeCount: true)
+                            .Write(records);
+                    }
+                    else
+                    {
+                        var records = filteredRepos.Select(l => new
+                        {
+                            repo = l.Name,
+                            changes = CountToString(l.LocalChangesCount),
+                            branches = CountToString(l.LocalBranchCount),
+                            stashes = CountToString(l.StashCount),
+                            branch = l.IsInLocalBranch ? l.CurrentBranchName : ""
+                        });
+                        new Table(console, ((TableFormatModel)null)?.GetTheme(), includeCount: true)
+                            .Write(records);
+                    }
                 }
                 else
                 {
@@ -153,6 +159,7 @@ namespace BbGit.ConsoleApp
 
         [Command(Description = "Clone all repositories matching the search criteria")]
         public async void CloneAll(
+            IConsole console,
             OnlyReposOperandList onlyRepos,
             [Option(
                 ShortName = "p",
@@ -166,10 +173,11 @@ namespace BbGit.ConsoleApp
 
             if (dryrun)
             {
-                repositories
+                IEnumerable<string> records = repositories
                     .OrderBy(r => r.Slug)
-                    .Select(r => $"{r.Slug} ({r.Project.Key})")
-                    .WriteTable();
+                    .Select(r => $"{r.Slug} ({r.Project.Key})");
+                new Table(console, ((TableFormatModel)null)?.GetTheme(), includeCount: true)
+                    .Write(records);
             }
             else
             {
@@ -182,6 +190,7 @@ namespace BbGit.ConsoleApp
         [Command(Description = "Pull all repositories in the parent directory.  " +
                                            "Piped input can be used to target specific repositories.")]
         public void PullAll(
+            IConsole console,
             OnlyReposOperandList onlyRepos,
             [Option] bool prune,
             [Option] bool dryrun,
@@ -191,10 +200,11 @@ namespace BbGit.ConsoleApp
             {
                 if (dryrun)
                 {
-                    repositories
+                    IEnumerable<string> records = repositories
                         .OrderBy(r => r.Name)
-                        .Select(r => r.Name)
-                        .WriteTable();
+                        .Select(r => r.Name);
+                    new Table(console, ((TableFormatModel)null)?.GetTheme(), includeCount: true)
+                        .Write(records);
                 }
                 else
                 {

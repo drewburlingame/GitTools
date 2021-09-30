@@ -12,19 +12,19 @@ namespace BbGit.ConsoleApp
         {
             return appRunner.Configure(c =>
             {
-                c.UseMiddleware(TimerDirective, MiddlewareSteps.DebugDirective + 1);
+                c.UseMiddleware(TimerDirective, MiddlewareSteps.DebugDirective - 1);
             });
         }
 
         private static Task<int> TimerDirective(CommandContext context, ExecutionDelegate next)
         {
-            if (context.Original.Tokens.TryGetDirective("timer", out _))
+            if (context.Original.Tokens.TryGetDirective("time", out _))
             {
                 var sw = Stopwatch.StartNew();
                 var result = next(context);
                 sw.Stop();
                 context.Console.WriteLine();
-                context.Console.WriteLine($"Timer: {sw.Elapsed}");
+                context.Console.WriteLine($"time: {sw.Elapsed}");
                 return result;
             }
 

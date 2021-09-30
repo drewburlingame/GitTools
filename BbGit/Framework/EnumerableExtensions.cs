@@ -17,6 +17,8 @@ namespace BbGit.Framework
         {
             return enumerable == null || !enumerable.Any();
         }
+        public static bool IsLast<T>(this ICollection<T> collection, int index) => index == collection.Count - 1;
+
         public static ICollection<T> ToCollection<T>(this IEnumerable<T> enumerable)
         {
             return enumerable is ICollection<T> coll ? coll : enumerable.ToList();

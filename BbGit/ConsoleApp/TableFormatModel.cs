@@ -1,4 +1,6 @@
-﻿using CommandDotNet;
+﻿using System;
+using BbGit.Tables;
+using CommandDotNet;
 
 namespace BbGit.ConsoleApp
 {
@@ -8,20 +10,36 @@ namespace BbGit.ConsoleApp
         {
             /// <summary>simple</summary>
             s,
-            /// <summary>keys only</summary>
-            k,
+            /// <summary>column borders</summary>
+            c,
             /// <summary>grid lines</summary>
             g,
+            /// <summary>keys only</summary>
+            k,
             /// <summary>markdown</summary>
             m
         }
  
         [Option(
             ShortName = "t", 
-            Description = "  s: no grid lines\n" +
-                          "    k: keys only, no grid lines\n" +
+            Description = "  c: column borders\n" +
                           "    g: grid lines\n" +
+                          "    s: header separator\n" +
+                          "    k: keys only, no grid lines\n" +
                           "    m: markdown")]
-        public TableFormat Table { get; set; } = TableFormat.s;
+        public TableFormat Table { get; set; } = TableFormat.c;
+
+        public TableTheme GetTheme()
+        {
+            return Table switch
+            {
+                TableFormat.c => TableTheme.ColumnBorders,
+                TableFormat.k => TableTheme.DataOnly,
+                TableFormat.g => TableTheme.Grid,
+                TableFormat.s => TableTheme.Borderless,
+                TableFormat.m => TableTheme.Markdown,
+                _ => throw new ArgumentOutOfRangeException($"unknown TableFormat: {Table}")
+            };
+        }
     }
 }
