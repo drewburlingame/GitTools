@@ -219,7 +219,7 @@ namespace BbGit.Git
         {
             return this.localReposConfig ??= 
                 ConfigFolder.CurrentDirectory()
-                    .GetJsonConfig<LocalReposConfig>(LocalReposConfigFileName);
+                    .GetJsonConfigOrDefault<LocalReposConfig>(LocalReposConfigFileName);
         }
 
         public void SaveLocalReposConfig(LocalReposConfig config)

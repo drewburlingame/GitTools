@@ -3,7 +3,6 @@ using Autofac;
 using BbGit.BitBucket;
 using BbGit.ConsoleApp;
 using BbGit.ConsoleUtils;
-using BbGit.Framework;
 using BbGit.Git;
 using Bitbucket.Net;
 using CommandDotNet;

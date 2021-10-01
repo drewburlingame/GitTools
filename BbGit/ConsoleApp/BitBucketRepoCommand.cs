@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using BbGit.BitBucket;
 using BbGit.Framework;
 using BbGit.Git;
@@ -17,11 +18,22 @@ namespace BbGit.ConsoleApp
     {
         private readonly BbService bbService;
         private readonly GitService gitService;
-         
+
         public BitBucketRepoCommand(BbService bbService, GitService gitService)
         {
             this.bbService = bbService ?? throw new ArgumentNullException(nameof(bbService));
             this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
+        }
+
+        public Task<int> Interceptor(InterceptorExecutionDelegate next,
+            IConsole console,
+            [Option(ShortName = "i")] bool ignoreCache,
+            [Option(ShortName = "s")] bool skipCacheRefresh,
+            [Option(ShortName = "f")] bool forceCacheRefresh,
+            [Option(ShortName = "w")] bool warnOnCacheRefresh)
+        {
+            bbService.RefreshCaches(console, ignoreCache, skipCacheRefresh, forceCacheRefresh, warnOnCacheRefresh);
+            return next();
         }
 
         [Command(

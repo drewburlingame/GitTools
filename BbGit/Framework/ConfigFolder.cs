@@ -56,12 +56,18 @@ namespace BbGit.Framework
             return this.SaveConfig(filename, json);
         }
 
-        public T GetJsonConfig<T>(string filename) where T : new()
+
+        public T GetJsonConfigOrDefault<T>(string filename) where T : class, new()
+        {
+            return GetJsonConfigOrEmpty<T>(filename) ?? new T();
+        }
+
+        public T GetJsonConfigOrEmpty<T>(string filename) where T: class
         {
             filename = SetJsonExtension(filename);
             var json = this.GetConfig(filename);
             return string.IsNullOrWhiteSpace(json)
-                ? new T()
+                ? null
                 : JSON.Deserialize<T>(json);
         }
 

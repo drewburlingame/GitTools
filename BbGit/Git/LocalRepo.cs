@@ -65,7 +65,7 @@ namespace BbGit.Git
             this.EvaluateIfExists();
 
             this.remoteRepo =
-                new LazyLoadProxy<RemoteRepo>(() => this.configFolder.GetJsonConfig<RemoteRepo>($"{this.Name}-remote"));
+                new LazyLoadProxy<RemoteRepo>(() => this.configFolder.GetJsonConfigOrDefault<RemoteRepo>($"{this.Name}-remote"));
         }
 
         public LocalRepo(LocalRepo localRepo)
