@@ -85,7 +85,7 @@ namespace BbGit.ConsoleApp
 
             if (!Directory.Exists(path))
             {
-                Console.Out.WriteLine("repos config not set");
+                Console.Out.WriteLine($"repos config not set: {path}");
                 return;
             }
 

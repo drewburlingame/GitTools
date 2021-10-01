@@ -8,7 +8,7 @@ namespace BbGit.Git
 {
     public class LocalRepo : IDisposable
     {
-        private readonly FolderConfig config;
+        private readonly ConfigFolder configFolder;
 
         private bool isDisposing;
         private LazyLoadProxy<RemoteRepo> remoteRepo;
@@ -61,11 +61,11 @@ namespace BbGit.Git
             this.GitRepo = gitRepo;
             this.Exists = Directory.Exists(this.FullPath);
             this.Name = new DirectoryInfo(this.FullPath).Name;
-            this.config = new FolderConfig(this.FullPath);
+            this.configFolder = new ConfigFolder(this.FullPath);
             this.EvaluateIfExists();
 
             this.remoteRepo =
-                new LazyLoadProxy<RemoteRepo>(() => this.config.GetJsonConfig<RemoteRepo>($"{this.Name}-remote"));
+                new LazyLoadProxy<RemoteRepo>(() => this.configFolder.GetJsonConfig<RemoteRepo>($"{this.Name}-remote"));
         }
 
         public LocalRepo(LocalRepo localRepo)
@@ -76,7 +76,7 @@ namespace BbGit.Git
             this.IsGitDir = localRepo.IsGitDir;
             this.GitRepo = localRepo.GitRepo;
             this.Name = localRepo.Name;
-            this.config = localRepo.config;
+            this.configFolder = localRepo.configFolder;
         }
 
         public void Dispose()
@@ -102,12 +102,12 @@ namespace BbGit.Git
 
         public void SaveConfigs()
         {
-            this.config.SaveJsonConfig($"{this.Name}-remote", this.RemoteRepo);
+            this.configFolder.SaveJsonConfig($"{this.Name}-remote", this.RemoteRepo);
         }
 
         public void ClearConfigs()
         {
-            this.config.ClearAll();
+            this.configFolder.ClearAll();
         }
 
         /// <summary>Evaluates if the local repo exists and if so, updates related properties</summary>

@@ -56,7 +56,6 @@ namespace BbGit
             
             containerBuilder.RegisterInstance(configs);
             containerBuilder.RegisterInstance(config);
-            containerBuilder.RegisterInstance(new DirectoryResolver());
             containerBuilder.RegisterType<BbService>();
             containerBuilder.RegisterType<GitService>();
 

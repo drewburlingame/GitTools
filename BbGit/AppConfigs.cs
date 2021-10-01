@@ -55,10 +55,9 @@ namespace BbGit
             return appConfigs;
         }
 
-        private static FolderConfig GetFolderConfig()
+        private static ConfigFolder GetFolderConfig()
         {
-            var userFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            return new FolderConfig(userFolder);
+            return ConfigFolder.UserFolder();
         }
 
         private static string GetSampleConfig()

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -16,20 +15,15 @@ namespace BbGit.BitBucket
         private const string RemoteReposConfigFileName = "remoteRepos";
         private readonly AppConfig appConfig;
         private readonly BitbucketClient bbServerClient;
-        private readonly DirectoryResolver directoryResolver;
 
         private RemoteReposConfig remoteReposConfig;
 
-        private string CurrentDirectory => this.directoryResolver.CurrentDirectory;
-
         public BbService(
             BitbucketClient bbServerClient,
-            AppConfig appConfig,
-            DirectoryResolver directoryResolver)
+            AppConfig appConfig)
         {
             this.bbServerClient = bbServerClient;
             this.appConfig = appConfig;
-            this.directoryResolver = directoryResolver;
         }
 
         public IEnumerable<RemoteProj> GetProjects()
@@ -39,8 +33,8 @@ namespace BbGit.BitBucket
 
         public async Task<IEnumerable<RemoteProj>> GetProjectsAsync()
         {
-            return (await this.bbServerClient.GetProjectsAsync())
-                .Select(p => new RemoteProj(p));
+            var projects = await this.bbServerClient.GetProjectsAsync();
+            return projects.Select(p => new RemoteProj(p));
         }
 
         public IEnumerable<RemoteRepo> GetRepos(string projectName = null)
@@ -96,13 +90,13 @@ namespace BbGit.BitBucket
         public RemoteReposConfig GetRemoteReposConfig()
         {
             return this.remoteReposConfig ??=
-                new FolderConfig(this.CurrentDirectory)
+                ConfigFolder.CurrentDirectory()
                     .GetJsonConfig<RemoteReposConfig>(RemoteReposConfigFileName);
         }
 
         public void SaveRemoteReposConfig(RemoteReposConfig config)
         {
-            new FolderConfig(this.CurrentDirectory).SaveJsonConfig(RemoteReposConfigFileName, config);
+            ConfigFolder.CurrentDirectory().SaveJsonConfig(RemoteReposConfigFileName, config);
         }
 
         private bool Include(bool includeIgnored, bool onlyIgnored, Repository repo)

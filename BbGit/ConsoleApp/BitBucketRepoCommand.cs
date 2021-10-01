@@ -82,6 +82,7 @@ namespace BbGit.ConsoleApp
                     });
 
                 new Table(console, tableFormatModel?.GetTheme(), includeCount: true)
+                    .OverrideColumn(records, r => r.Type, new Column("Type"){ WrapText = false })
                     .Write(records);
             }
             else
@@ -95,8 +96,8 @@ namespace BbGit.ConsoleApp
                 else
                 {
                     new Table(console, tableFormatModel?.GetTheme(), includeCount: true)
-                        .Write(projects.Select(p => 
-                            new { p.Key, p.Name, p.Description, p.Public, p.Type }));
+                        .OverrideColumn(projects, r => r.Type, new Column("Type") { WrapText = false })
+                        .Write(projects.Select(p => new { p.Key, p.Name, p.Description, p.Public, p.Type }));
                 }
             }
 

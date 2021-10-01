@@ -4,13 +4,24 @@ using Jil;
 
 namespace BbGit.Framework
 {
-    public class FolderConfig
+    public class ConfigFolder
     {
         private readonly string path;
         
         public string BbGitPath { get; }
 
-        public FolderConfig(string path)
+        public static ConfigFolder UserFolder()
+        {
+            var userFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            return new ConfigFolder(userFolder);
+        }
+
+        public static ConfigFolder CurrentDirectory()
+        {
+            return new ConfigFolder(Environment.CurrentDirectory);
+        }
+
+        public ConfigFolder(string path)
         {
             this.path = path;
             this.BbGitPath = Path.Combine(path, ".bbgit");
@@ -58,6 +69,8 @@ namespace BbGit.Framework
         {
             Directory.Delete(this.BbGitPath, true);
         }
+
+        public void Exists() => Directory.Exists(this.BbGitPath);
 
         private void EnsureDirectoryExists()
         {

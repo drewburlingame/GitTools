@@ -18,24 +18,22 @@ namespace BbGit.Git
         private const string LocalReposConfigFileName = "localRepos";
 
         private readonly AppConfig appConfig;
-        private readonly DirectoryResolver directoryResolver;
         private LocalReposConfig localReposConfig;
 
-        private string CurrentDirectory => this.directoryResolver.CurrentDirectory;
+        private readonly string currentDirectory = Directory.GetCurrentDirectory();
 
         private CredentialsHandler CredentialsProvider => (url, fromUrl, types) =>
             new UsernamePasswordCredentials {Username = this.appConfig.Username, Password = this.appConfig.AppPassword};
 
-        public GitService(AppConfig appConfig, DirectoryResolver directoryResolver)
+        public GitService(AppConfig appConfig)
         {
             this.appConfig = appConfig;
-            this.directoryResolver = directoryResolver;
         }
 
         public void CloneRepo(RemoteRepo remoteRepo)
         {
             var localRepo =
-                new LocalRepo(Path.Combine(this.CurrentDirectory, remoteRepo.Name)) {RemoteRepo = remoteRepo};
+                new LocalRepo(Path.Combine(this.currentDirectory, remoteRepo.Name)) {RemoteRepo = remoteRepo};
 
             var defaultColor = Colors.DefaultColor;
             if (localRepo.Exists)
@@ -192,7 +190,7 @@ namespace BbGit.Git
 
             if (onlyRepos?.Any() ?? false)
             {
-                var repoNameSet = onlyRepos.Select(n => Path.Combine(this.CurrentDirectory, n)).ToHashSet();
+                var repoNameSet = onlyRepos.Select(n => Path.Combine(this.currentDirectory, n)).ToHashSet();
                 paths = paths.Where(repoNameSet.Contains);
             }
 
@@ -214,30 +212,30 @@ namespace BbGit.Git
 
         public string GetLocalReposConfigPath()
         {
-            return new FolderConfig(this.CurrentDirectory).BbGitPath;
+            return ConfigFolder.CurrentDirectory().BbGitPath;
         }
 
         public LocalReposConfig GetLocalReposConfig()
         {
             return this.localReposConfig ??= 
-                new FolderConfig(this.CurrentDirectory)
+                ConfigFolder.CurrentDirectory()
                     .GetJsonConfig<LocalReposConfig>(LocalReposConfigFileName);
         }
 
         public void SaveLocalReposConfig(LocalReposConfig config)
         {
-            new FolderConfig(this.CurrentDirectory).SaveJsonConfig(LocalReposConfigFileName, config);
+            ConfigFolder.CurrentDirectory().SaveJsonConfig(LocalReposConfigFileName, config);
         }
 
         private IEnumerable<string> GetLocalDirectoryPaths()
         {
             try
             {
-                return Directory.GetDirectories(this.CurrentDirectory);
+                return Directory.GetDirectories(this.currentDirectory);
             }
             catch (Exception e)
             {
-                throw new Exception($"{e.Message} {new {currentDirectory = this.CurrentDirectory}}", e);
+                throw new Exception($"{e.Message} {new {currentDirectory = this.currentDirectory}}", e);
             }
         }
 
