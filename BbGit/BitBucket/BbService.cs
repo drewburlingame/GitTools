@@ -109,9 +109,15 @@ namespace BbGit.BitBucket
             return await projectNames.SelectManyAsync(GetReposAsync);
         }
 
-        public IEnumerable<RemoteRepo> GetRepos(string projectName = null)
+
+        public IEnumerable<RemoteRepo> GetRepos()
         {
-            return GetReposAsync().Result;
+            return GetReposAsync((string)null).Result;
+        }
+
+        public IEnumerable<RemoteRepo> GetRepos(string projectName)
+        {
+            return GetReposAsync(projectName).Result;
         }
 
         public async Task<IEnumerable<RemoteRepo>> GetReposAsync(string projectName = null)
@@ -126,7 +132,7 @@ namespace BbGit.BitBucket
             {
                 if (projectName is null)
                 {
-                    repositories = RepoCache.Get().Repos;
+                    repositories = RepoCache.Get().GetRepos();
                 }
                 else
                 {
@@ -143,11 +149,9 @@ namespace BbGit.BitBucket
             return (await this.bbServerClient.GetProjectsAsync());
         }
 
-        private async Task<IEnumerable<Repository>> GetReposRawAsync(string projectName = null)
+        private Task<IEnumerable<Repository>> GetReposRawAsync(string projectName = null)
         {
-            var privateRepos = await this.bbServerClient.GetRepositoriesAsync(projectName: projectName, isPublic: false);
-            var publicRepos = await this.bbServerClient.GetRepositoriesAsync(projectName: projectName, isPublic: true);
-            return privateRepos.Concat(publicRepos);
+            return this.bbServerClient.GetRepositoriesAsync(projectName: projectName);
         }
 
         [Obsolete]

@@ -9,6 +9,6 @@ namespace BbGit.ConsoleApp
         [Operand(
             Name = "only-repos",
             Description = "If provided, include only these repos")]
-        public ICollection<string> RepoNames { get; set; }
+        public List<string> RepoNames { get; set; }
     }
 }

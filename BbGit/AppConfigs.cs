@@ -10,21 +10,21 @@ namespace BbGit
     public class AppConfigs
     {
         public AppConfig Default { get; set; }
-        public Dictionary<string, AppConfig> ConfigsByName { get; set; } = new Dictionary<string, AppConfig>();
+        public Dictionary<string, AppConfig> ConfigsByName { get; set; } = new();
 
         public static string InitConfigFile()
         {
-            var folderConfig = GetFolderConfig();
-            var sampleConfig = GetSampleConfig();
-            return folderConfig.SaveConfig("config", sampleConfig);
+            return ConfigFolder
+                .UserFolder()
+                .SaveConfig("config", GetSampleConfig());
         }
 
         public static AppConfigs Load()
         {
             var appConfigs = new AppConfigs();
 
-            var folderConfig = GetFolderConfig();
-            var configString = folderConfig.GetConfig("config");
+            var configString = ConfigFolder.UserFolder()
+                .GetConfig("config");
             if (configString == null)
             {
                 return appConfigs;
@@ -55,23 +55,11 @@ namespace BbGit
             return appConfigs;
         }
 
-        private static ConfigFolder GetFolderConfig()
-        {
-            return ConfigFolder.UserFolder();
-        }
-
         private static string GetSampleConfig()
         {
-            string result;
-            using (var stream = typeof(AppConfigs).Assembly.GetManifestResourceStream("BbGit.config.example"))
-            {
-                using (var reader = new StreamReader(stream))
-                {
-                    result = reader.ReadToEnd();
-                }
-            }
-
-            return result;
+            using var stream = typeof(AppConfigs).Assembly.GetManifestResourceStream("BbGit.config.example");
+            using var reader = new StreamReader(stream!);
+            return reader.ReadToEnd();
         }
     }
 }

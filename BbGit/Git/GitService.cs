@@ -3,115 +3,76 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
+using BbGit.BitBucket;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;
 using Colorful;
+using CommandDotNet;
+using CommandDotNet.Rendering;
 using LibGit2Sharp;
 using LibGit2Sharp.Handlers;
+using Pastel;
 using Console = Colorful.Console;
 
 namespace BbGit.Git
 {
     public class GitService
     {
-        private const string LocalReposConfigFileName = "localRepos";
-
-        private readonly AppConfig appConfig;
-        private LocalReposConfig localReposConfig;
+        private readonly BbService bbService;
+        private readonly CredentialsHandler credentialsProvider;
 
         private readonly string currentDirectory = Directory.GetCurrentDirectory();
 
-        private CredentialsHandler CredentialsProvider => (url, fromUrl, types) =>
-            new UsernamePasswordCredentials {Username = this.appConfig.Username, Password = this.appConfig.AppPassword};
-
-        public GitService(AppConfig appConfig)
+        public GitService(BbService bbService, CredentialsHandler credentialsProvider)
         {
-            this.appConfig = appConfig;
+            this.bbService = bbService;
+            this.credentialsProvider = credentialsProvider;
         }
 
-        public void CloneRepo(RemoteRepo remoteRepo)
+        public void CloneRepo(IConsole console, RemoteRepo remoteRepo, bool setOriginToSsh)
         {
             var localRepo =
-                new LocalRepo(Path.Combine(this.currentDirectory, remoteRepo.Name)) {RemoteRepo = remoteRepo};
+                new LocalRepo(remoteRepo, Path.Combine(this.currentDirectory, remoteRepo.Slug));
 
             var defaultColor = Colors.DefaultColor;
             if (localRepo.Exists)
             {
-                // TODO: handle scenario where FolderConfig hasn't been created
-                Console.WriteLineFormatted(
-                    "{0} already exists",
-                    new Formatter(remoteRepo.Name, Colors.BranchColor),
-                    defaultColor);
+                console.WriteLine($"{remoteRepo.Slug.ColorRepo()} already exists".ColorDefault());
                 return;
             }
 
-            Console.WriteLineFormatted(
-                "cloning  {0}  to  {1}",
-                new Formatter(remoteRepo.Name, Colors.RepoColor),
-                new Formatter(localRepo.FullPath, Colors.PathColor),
-                defaultColor);
+            console.WriteLine($"cloning  {remoteRepo.Slug.ColorRepo()}");
+            console.WriteLine($"  from  {remoteRepo.HttpsUrl.ColorPath()}");
+            console.WriteLine($"  to  {localRepo.FullPath.ColorPath()}");
 
-            var repoPath = Repository.Clone(
+            Repository.Clone(
                 remoteRepo.HttpsUrl,
                 localRepo.FullPath,
                 new CloneOptions
                 {
-                    CredentialsProvider = this.CredentialsProvider
+                    CredentialsProvider = this.credentialsProvider
                 });
 
             localRepo.EvaluateIfExists();
-            if (this.appConfig.SetOriginToSsh)
+            if (setOriginToSsh)
             {
                 GitUrls.SetOriginToSsh(localRepo);
             }
 
             localRepo.EvaluateIfExists();
-            localRepo.SaveConfigs();
-        }
-
-        public void UpdateRepoConfigs(LocalRepo localRepo)
-        {
-            if (localRepo.Exists)
-            {
-                Console.WriteLineFormatted(
-                    "updating configs for {0}",
-                    new Formatter(localRepo.Name, Colors.BranchColor),
-                    Colors.DefaultColor);
-
-                if (this.appConfig.SetOriginToSsh)
-                {
-                    GitUrls.SetOriginToSsh(localRepo);
-                }
-
-                localRepo.SaveConfigs();
-            }
-        }
-
-        public void ClearRepoConfigs(LocalRepo localRepo)
-        {
-            Console.WriteLineFormatted(
-                "clearing configs for {0}",
-                new Formatter(localRepo.Name, Colors.BranchColor),
-                Colors.DefaultColor);
-
-            localRepo.ClearConfigs();
         }
 
         public void PullLatest(LocalRepo localRepo, bool prune, string branchName = "master")
         {
-            var repo = localRepo.GitRepo;
-
-            var gitDir = new LocalRepo(repo);
             var repoColor = Colors.RepoColor;
             var branchColor = Colors.BranchColor;
-            if (!repo.Head.FriendlyName.Equals(branchName))
+            if (!localRepo.GitRepo.Head.FriendlyName.Equals(branchName))
             {
                 Console.WriteLineFormatted(
                     "Skipping pull for {0}. Expected branch {1} but was {2}",
-                    new Formatter(gitDir.Name, repoColor),
+                    new Formatter(localRepo.Name, repoColor),
                     new Formatter(branchName, branchColor),
-                    new Formatter(repo.Head.FriendlyName, branchColor),
+                    new Formatter(localRepo.GitRepo.Head.FriendlyName, branchColor),
                     Color.Red);
 
                 return;
@@ -122,7 +83,7 @@ namespace BbGit.Git
             Console.WriteLineFormatted(
                 "pulling " + (prune ? "and pruning " : null) + "branch {0} for {1}",
                 new Formatter(branchName, branchColor),
-                new Formatter(gitDir.Name, repoColor),
+                new Formatter(localRepo.Name, repoColor),
                 Colors.DefaultColor);
 
             using (GitUrls.ToggleHttpsUrl(localRepo))
@@ -130,13 +91,13 @@ namespace BbGit.Git
                 string compressedObjects = null;
                 string totals = null;
                 Commands.Pull(
-                    repo,
-                    repo.Config.BuildSignature(new DateTimeOffset(DateTime.Now)),
+                    localRepo.GitRepo,
+                    localRepo.GitRepo.Config.BuildSignature(new DateTimeOffset(DateTime.Now)),
                     new PullOptions
                     {
                         FetchOptions = new FetchOptions
                         {
-                            CredentialsProvider = this.CredentialsProvider,
+                            CredentialsProvider = this.credentialsProvider,
                             Prune = prune,
                             OnProgress = output =>
                             {
@@ -169,37 +130,27 @@ namespace BbGit.Git
             }
         }
 
-        public IEnumerable<string> GetLocalRepoNames(
-            bool includeIgnored = false,
-            bool onlyIgnored = false)
+        public IEnumerable<string> GetLocalRepoNames(ICollection<string> onlyRepos = null)
         {
             return this.GetLocalDirectoryPaths()
-                .Select(p => new DirectoryInfo(p).Name)
-                .Where(n => includeIgnored
-                            || onlyIgnored && this.RepoIsIgnored(n)
-                            || !this.RepoIsIgnored(n))
+                .Where(p => onlyRepos?.Contains(p.name) ?? true)
+                .Select(p => p.path)
                 .ToList();
         }
 
-        public DisposableCollection<LocalRepo> GetLocalRepos(
-            ICollection<string> onlyRepos = null,
-            bool includeIgnored = false,
-            bool onlyIgnored = false)
+        public DisposableCollection<LocalRepo> GetLocalRepos(ICollection<string> onlyRepos = null)
         {
             var paths = GetLocalDirectoryPaths();
 
-            if (onlyRepos?.Any() ?? false)
-            {
-                var repoNameSet = onlyRepos.Select(n => Path.Combine(this.currentDirectory, n)).ToHashSet();
-                paths = paths.Where(repoNameSet.Contains);
-            }
+            var remoteRepos = 
+                this.bbService
+                .GetRepos((string)null)
+                .ToList();
 
             return paths
-                .Select(p => new LocalRepo(p))
-                .Where(r => r.IsGitDir
-                            && (includeIgnored
-                                || onlyIgnored && this.RepoIsIgnored(r.Name)
-                                || !this.RepoIsIgnored(r.Name)))
+                .Where(p => onlyRepos?.Contains(p.name) ?? true)
+                .Select(p => new LocalRepo(remoteRepos.FirstOrDefault(r => r.Slug == p.name), p.path))
+                .Where(r => r.IsGitDir)
                 .OrderBy(r => r.Name)
                 .ToDisposableCollection();
 
@@ -210,43 +161,18 @@ namespace BbGit.Git
             // Disposing the collection seems to fix it.
         }
 
-        public string GetLocalReposConfigPath()
-        {
-            return ConfigFolder.CurrentDirectory().BbGitPath;
-        }
-
-        public LocalReposConfig GetLocalReposConfig()
-        {
-            return this.localReposConfig ??= 
-                ConfigFolder.CurrentDirectory()
-                    .GetJsonConfigOrDefault<LocalReposConfig>(LocalReposConfigFileName);
-        }
-
-        public void SaveLocalReposConfig(LocalReposConfig config)
-        {
-            ConfigFolder.CurrentDirectory().SaveJsonConfig(LocalReposConfigFileName, config);
-        }
-
-        private IEnumerable<string> GetLocalDirectoryPaths()
+        private IEnumerable<(string name, string path)> GetLocalDirectoryPaths()
         {
             try
             {
-                return Directory.GetDirectories(this.currentDirectory);
+                return Directory
+                    .GetDirectories(this.currentDirectory)
+                    .Select(d => (Path.GetDirectoryName(d), d));
             }
             catch (Exception e)
             {
                 throw new Exception($"{e.Message} {new {currentDirectory = this.currentDirectory}}", e);
             }
-        }
-
-        private bool RepoIsIgnored(string repoName)
-        {
-            if (string.IsNullOrWhiteSpace(this.GetLocalReposConfig().IgnoredReposRegex))
-            {
-                return false;
-            }
-
-            return Regex.IsMatch(repoName, this.GetLocalReposConfig().IgnoredReposRegex);
         }
     }
 }

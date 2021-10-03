@@ -6,9 +6,7 @@ namespace BbGit.Framework
 {
     public class ConfigFolder
     {
-        private readonly string path;
-        
-        public string BbGitPath { get; }
+        public string FolderPath { get; }
 
         public static ConfigFolder UserFolder()
         {
@@ -21,16 +19,22 @@ namespace BbGit.Framework
             return new ConfigFolder(Environment.CurrentDirectory);
         }
 
-        public ConfigFolder(string path)
+        public ConfigFolder(string root)
         {
-            this.path = path;
-            this.BbGitPath = Path.Combine(path, ".bbgit");
+            if (!Directory.Exists(root))
+            {
+                throw new InvalidOperationException($"folder does not exist: {root}");
+            }
+            
+            FolderPath = Path.Combine(root, ".bbgit");
+            EnsureDirectoryExists(FolderPath);
         }
+
+        public ConfigFolder ChildDirectory(string directoryName)
+            => new (Path.Combine(FolderPath, directoryName));
 
         public string SaveConfig(string filename, string contents)
         {
-            this.EnsureDirectoryExists();
-
             var filePath = this.BuildFilePath(filename);
             File.WriteAllText(filePath, contents);
             return filePath;
@@ -38,15 +42,10 @@ namespace BbGit.Framework
 
         public string GetConfig(string filename)
         {
-            this.EnsureDirectoryExists();
-
             var filePath = this.BuildFilePath(filename);
-            if (!File.Exists(filePath))
-            {
-                return null;
-            }
-
-            return File.ReadAllText(filePath);
+            return File.Exists(filePath) 
+                ? File.ReadAllText(filePath) 
+                : null;
         }
 
         public string SaveJsonConfig(string filename, object value)
@@ -55,7 +54,6 @@ namespace BbGit.Framework
             var json = JSON.Serialize(value, Options.PrettyPrintExcludeNullsIncludeInheritedUtc);
             return this.SaveConfig(filename, json);
         }
-
 
         public T GetJsonConfigOrDefault<T>(string filename) where T : class, new()
         {
@@ -73,28 +71,21 @@ namespace BbGit.Framework
 
         public void ClearAll()
         {
-            Directory.Delete(this.BbGitPath, true);
+            Directory.Delete(this.FolderPath, true);
         }
 
-        public void Exists() => Directory.Exists(this.BbGitPath);
-
-        private void EnsureDirectoryExists()
+        private void EnsureDirectoryExists(string bbGitPath)
         {
-            if (!Directory.Exists(this.path))
+            if (!Directory.Exists(bbGitPath))
             {
-                throw new InvalidOperationException($"folder does not exist: {this.path}");
-            }
-
-            if (!Directory.Exists(this.BbGitPath))
-            {
-                var directory = Directory.CreateDirectory(this.BbGitPath);
+                var directory = Directory.CreateDirectory(bbGitPath);
                 directory.Attributes = FileAttributes.Directory | FileAttributes.Hidden;
             }
         }
 
         private string BuildFilePath(string filename)
         {
-            return Path.Combine(this.BbGitPath, filename);
+            return Path.Combine(this.FolderPath, filename);
         }
 
         private static string SetJsonExtension(string filename)

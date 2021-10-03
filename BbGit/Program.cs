@@ -6,8 +6,11 @@ using BbGit.ConsoleUtils;
 using BbGit.Git;
 using Bitbucket.Net;
 using CommandDotNet;
+using CommandDotNet.DataAnnotations;
 using CommandDotNet.IoC.Autofac;
 using CommandDotNet.NameCasing;
+using LibGit2Sharp;
+using LibGit2Sharp.Handlers;
 
 namespace BbGit
 {
@@ -24,6 +27,7 @@ namespace BbGit
                 var appRunner = new AppRunner<GitApplication>()
                     .UseDefaultMiddleware(excludePrompting: true)
                     .UseNameCasing(Case.KebabCase)
+                    .UseDataAnnotationValidations(showHelpOnError:true)
                     .UseTimerDirective()
                     .UseErrorHandler((ctx, ex) =>
                     {
@@ -51,7 +55,6 @@ namespace BbGit
             containerBuilder.RegisterType<BitBucketRepoCommand>();
             containerBuilder.RegisterType<GlobalConfigCommand>();
             containerBuilder.RegisterType<LocalRepoCommand>();
-            containerBuilder.RegisterType<RepoConfigCommand>();
             
             containerBuilder.RegisterInstance(configs);
             containerBuilder.RegisterInstance(config);
@@ -65,20 +68,24 @@ namespace BbGit
             return appRunner.UseAutofac(container);
         }
 
-        private static void RegisterServerBbApi(this ContainerBuilder containerBuilder, AppConfig appConfig)
+        private static void RegisterServerBbApi(this ContainerBuilder containerBuilder, AppConfig config)
         {
             BitbucketClient bbClient;
-            switch (appConfig.AuthType)
+            switch (config.AuthType)
             {
                 case AppConfig.AuthTypes.Basic:
-                    bbClient = new BitbucketClient(appConfig.BaseUrl, appConfig.Username, appConfig.AppPassword);
+                    bbClient = new BitbucketClient(config.BaseUrl, config.Username, config.AppPassword);
                     break;
                 case AppConfig.AuthTypes.OAuth:
-                    bbClient = new BitbucketClient(appConfig.BaseUrl, () => appConfig.AppPassword);
+                    bbClient = new BitbucketClient(config.BaseUrl, () => config.AppPassword);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+
+            containerBuilder.RegisterInstance<CredentialsHandler>((url, fromUrl, types) =>
+                new UsernamePasswordCredentials { Username = config.Username, Password = config.AppPassword });
+
             containerBuilder.RegisterInstance(bbClient);
         }
     }

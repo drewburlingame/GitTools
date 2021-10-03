@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -125,7 +126,9 @@ namespace BbGit.ConsoleApp
             [Option(ShortName = "n", Description = "regex to match name")]
             string namePattern = null,
             [Option(ShortName = "s", Description = "regex to match slug")]
-            string slugPattern = null)
+            string slugPattern = null,
+            [Option(ShortName = "c")]
+            bool? isCloned = null)
         {
             var projects = this.bbService
                 .GetProjects()
@@ -142,7 +145,7 @@ namespace BbGit.ConsoleApp
                 .Where(p => nameRegex is null || nameRegex.IsMatch(p.Name))
                 .Where(p => slugRegex is null || slugRegex.IsMatch(p.Slug));
 
-            var repoPairs = localRepos.PairRepos(remoteRepos, mustHaveRemote: true).Values;
+            var repoPairs = localRepos.PairRepos(remoteRepos, mustHaveRemote: true, isCloned).Values;
 
             if (tableFormatModel?.Table == TableFormatModel.TableFormat.k)
             {
@@ -166,6 +169,25 @@ namespace BbGit.ConsoleApp
                 new Table(console, tableFormatModel?.GetTheme(), includeCount: true)
                     .Write(rows);
             }
+        }
+
+
+        [Command(Description = "Clone all repositories matching the search criteria")]
+        public void Clone(
+            IConsole console,
+            [Operand]
+            [Required] string[] repos,
+            [Option(ShortName = "s")] bool setOriginToSsh = false)
+        {
+            var repositories = this.bbService.GetRepos()
+                .Where(r => repos.Contains(r.Slug))
+                .ToList();
+
+            console.WriteLine($"cloning {repositories.Count} repos");
+            repositories
+                .SafelyForEach(
+                    r => this.gitService.CloneRepo(console, r, setOriginToSsh), 
+                    summarizeErrors: true);
         }
     }
 }

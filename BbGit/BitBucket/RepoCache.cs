@@ -11,7 +11,7 @@ namespace BbGit.BitBucket
         public DateTime CachedOn { get; set; }
         public Dictionary<string, List<Repository>> ReposByProjectKey { get; set; }
 
-        public IEnumerable<Repository> Repos => ReposByProjectKey.Values.SelectMany(r => r);
+        public IEnumerable<Repository> GetRepos() => ReposByProjectKey.Values.SelectMany(r => r);
 
         private static RepoCache _instance;
         

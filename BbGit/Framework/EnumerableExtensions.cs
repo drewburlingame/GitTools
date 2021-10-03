@@ -68,6 +68,11 @@ namespace BbGit.Framework
             var errorsInARow = 0;
             items.ForEach((r, i) =>
             {
+                Console.WriteLineFormatted(
+                    $"{i + 1} of {items.Count} - " + "{0}",
+                    new Formatter(getName(r), Colors.BranchColor),
+                    Colors.DefaultColor);
+
                 try
                 {
                     action(r);
@@ -87,10 +92,6 @@ namespace BbGit.Framework
                     errors.Add((r, i + 1, e));
                 }
 
-                Console.WriteLineFormatted(
-                    $"{i + 1} of {items.Count} - " + "{0}",
-                    new Formatter(getName(r), Colors.BranchColor),
-                    Colors.DefaultColor);
             });
 
             if (summarizeErrors && errors.Count > 0)

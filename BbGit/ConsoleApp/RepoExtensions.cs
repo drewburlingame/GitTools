@@ -9,7 +9,8 @@ namespace BbGit.ConsoleApp
     public static class RepoExtensions
     {
         public static IDictionary<string, RepoPair> PairRepos(
-            this IEnumerable<LocalRepo> locals, IEnumerable<RemoteRepo> remotes, bool mustHaveRemote = false)
+            this IEnumerable<LocalRepo> locals, IEnumerable<RemoteRepo> remotes, 
+            bool mustHaveRemote = false, bool? isCloned = null)
         {
             var pairs = new Dictionary<string, RepoPair>();
             
@@ -28,6 +29,22 @@ namespace BbGit.ConsoleApp
                 pairs.Values
                     .Where(p => p.Remote is null)
                     .ForEach(p => pairs.Remove(p.Local.Name));
+            }
+
+            if (isCloned.HasValue)
+            {
+                if (isCloned.Value)
+                {
+                    pairs.Values
+                        .Where(p => p.Local is null)
+                        .ForEach(p => pairs.Remove(p.Remote.Slug));
+                }
+                else
+                {
+                    pairs.Values
+                        .Where(p => p.Local is not null)
+                        .ForEach(p => pairs.Remove(p.Remote.Slug));
+                }
             }
 
             return pairs;
