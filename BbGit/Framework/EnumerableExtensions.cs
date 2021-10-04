@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using BbGit.ConsoleUtils;
 using BbGit.Git;
@@ -17,12 +18,27 @@ namespace BbGit.Framework
         {
             return enumerable == null || !enumerable.Any();
         }
+
         public static bool IsLast<T>(this ICollection<T> collection, int index) => index == collection.Count - 1;
 
         public static ICollection<T> ToCollection<T>(this IEnumerable<T> enumerable)
         {
             return enumerable is ICollection<T> coll ? coll : enumerable.ToList();
         }
+
+        public static IEnumerable<T> WhereMatches<T>(this IEnumerable<T> items, Func<T, string> getValue, string? regexPattern)
+            => string.IsNullOrEmpty(regexPattern)
+                ? items 
+                : items.WhereMatches(getValue, new Regex(regexPattern));
+
+        public static IEnumerable<T> WhereMatches<T>(this IEnumerable<T> items, Func<T, string> getValue, Regex? regex)
+            => items.Where(t =>
+            {
+                if (regex is null) return true;
+
+                var value = getValue(t);
+                return value is not null && regex.IsMatch(value);
+            });
 
         public static DisposableCollection<T> ToDisposableCollection<T>(this IEnumerable<T> items) where T : IDisposable
         {
@@ -42,7 +58,7 @@ namespace BbGit.Framework
             int allowedErrorsInARow = 2,
             bool summarizeErrors = false)
         {
-            values.SafelyForEach(r => r.Name, action, allowedErrorsInARow, summarizeErrors);
+            values.SafelyForEach(r => r.Description, action, allowedErrorsInARow, summarizeErrors);
         }
 
         public static void SafelyForEach(

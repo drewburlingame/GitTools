@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using BbGit.Framework;
 using BbGit.Git;
@@ -15,18 +14,12 @@ namespace BbGit.BitBucket
 {
     public class BbService
     {
-        private const string RemoteReposConfigFileName = "remoteRepos";
-        private readonly AppConfig appConfig;
         private readonly BitbucketClient bbServerClient;
-        private RemoteReposConfig remoteReposConfig;
-        public bool ignoreCache;
+        private bool ignoreCache;
 
-        public BbService(
-            BitbucketClient bbServerClient,
-            AppConfig appConfig)
+        public BbService(BitbucketClient bbServerClient)
         {
             this.bbServerClient = bbServerClient;
-            this.appConfig = appConfig;
         }
 
         public void RefreshCaches(IConsole console,
@@ -137,7 +130,8 @@ namespace BbGit.BitBucket
                 else
                 {
                     var projectKey = ProjectCache.Get().ProjectsByKey.Values.First(p => p.Name == projectName).Key;
-                    repositories = RepoCache.Get().ReposByProjectKey[projectKey];
+                    repositories = RepoCache.Get().ReposByProjectKey.GetValueOrDefault(projectKey) 
+                                   ?? Enumerable.Empty<Repository>().ToList();
                 }
             }
 
@@ -152,102 +146,6 @@ namespace BbGit.BitBucket
         private Task<IEnumerable<Repository>> GetReposRawAsync(string projectName = null)
         {
             return this.bbServerClient.GetRepositoriesAsync(projectName: projectName);
-        }
-
-        [Obsolete]
-        public async Task<IEnumerable<Repository>> GetRepos(
-            string projectNamePattern = null,
-            ICollection<string> onlyRepos = null,
-            bool includeIgnored = false,
-            bool onlyIgnored = false)
-        {
-            var repos = await this.bbServerClient.GetRepositoriesAsync();
-
-            var repositories = repos
-                .Where(repo => this.Include(includeIgnored, onlyIgnored, repo))
-                .OrderBy(r => r.Slug)
-                .AsEnumerable();
-
-            if (projectNamePattern != null)
-            {
-                repositories = repositories.Where(r =>
-                    Regex.IsMatch(r.Project.Key, $"^{projectNamePattern}$".Replace(",", "$|^"), RegexOptions.IgnoreCase));
-            }
-
-            if (onlyRepos?.Any() ?? false)
-            {
-                var repoNameSet = onlyRepos.ToHashSet();
-                repositories = repositories.Where(r => repoNameSet.Contains(r.Slug));
-            }
-
-            return repositories.ToList();
-        }
-
-        public RemoteReposConfig GetRemoteReposConfig()
-        {
-            return this.remoteReposConfig ??=
-                ConfigFolder.CurrentDirectory()
-                    .GetJsonConfigOrDefault<RemoteReposConfig>(RemoteReposConfigFileName);
-        }
-
-        public void SaveRemoteReposConfig(RemoteReposConfig config)
-        {
-            ConfigFolder.CurrentDirectory().SaveJsonConfig(RemoteReposConfigFileName, config);
-        }
-
-        private bool Include(bool includeIgnored, bool onlyIgnored, Repository repo)
-        {
-            if (includeIgnored && onlyIgnored)
-            {
-                throw new ArgumentOutOfRangeException(
-                    $"{nameof(includeIgnored)} && {nameof(onlyIgnored)} are mutually exclusive.  Only one of them can be true");
-            }
-
-            var reposConfig = this.GetRemoteReposConfig();
-            var ignoreRepoRegex = reposConfig.IgnoredReposRegex;
-            var ignoreProjRegex = reposConfig.IgnoredProjectsRegex;
-
-            var hasIgnoreRepoRegex = !string.IsNullOrWhiteSpace(ignoreRepoRegex);
-            var hasIgnoreProjRegex = !string.IsNullOrWhiteSpace(ignoreProjRegex);
-
-            if (!hasIgnoreRepoRegex && !hasIgnoreProjRegex)
-            {
-                return true;
-            }
-
-            if (includeIgnored) // include all
-            {
-                return true;
-            }
-
-            var repoIsIgnored = hasIgnoreRepoRegex && Regex.IsMatch(repo.Slug, ignoreRepoRegex);
-            var projIsIgnored = hasIgnoreProjRegex && Regex.IsMatch(repo.Project.Key, ignoreProjRegex);
-
-            return onlyIgnored
-                ? repoIsIgnored || projIsIgnored
-                : !repoIsIgnored && !projIsIgnored;
-        }
-
-        private bool RepoIsIgnored(Repository repo)
-        {
-            var ignoredReposRegex = this.GetRemoteReposConfig().IgnoredReposRegex;
-            if (string.IsNullOrWhiteSpace(ignoredReposRegex))
-            {
-                return true;
-            }
-
-            return Regex.IsMatch(repo.Slug, ignoredReposRegex);
-        }
-
-        private bool ProjectIsIgnored(Repository repo)
-        {
-            var ignoredProjectsRegex = this.GetRemoteReposConfig().IgnoredProjectsRegex;
-            if (string.IsNullOrWhiteSpace(ignoredProjectsRegex))
-            {
-                return true;
-            }
-
-            return Regex.IsMatch(repo.Project.Key, ignoredProjectsRegex);
         }
     }
 }

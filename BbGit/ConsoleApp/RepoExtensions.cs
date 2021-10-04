@@ -21,7 +21,7 @@ namespace BbGit.ConsoleApp
 
             foreach (var remote in remotes)
             {
-                pairs.GetValueOrAdd(remote.Slug).Remote = remote;
+                pairs.GetValueOrAdd(remote.Name).Remote = remote;
             }
 
             if (mustHaveRemote)
@@ -37,13 +37,13 @@ namespace BbGit.ConsoleApp
                 {
                     pairs.Values
                         .Where(p => p.Local is null)
-                        .ForEach(p => pairs.Remove(p.Remote.Slug));
+                        .ForEach(p => pairs.Remove(p.Remote.Name));
                 }
                 else
                 {
                     pairs.Values
                         .Where(p => p.Local is not null)
-                        .ForEach(p => pairs.Remove(p.Remote.Slug));
+                        .ForEach(p => pairs.Remove(p.Remote.Name));
                 }
             }
 

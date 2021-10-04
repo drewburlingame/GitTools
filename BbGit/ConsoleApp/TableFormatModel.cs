@@ -14,8 +14,6 @@ namespace BbGit.ConsoleApp
             c,
             /// <summary>grid lines</summary>
             g,
-            /// <summary>keys only</summary>
-            k,
             /// <summary>markdown</summary>
             m
         }
@@ -25,7 +23,6 @@ namespace BbGit.ConsoleApp
             Description = "  c: column borders\n" +
                           "    g: grid lines\n" +
                           "    s: header separator\n" +
-                          "    k: keys only, no grid lines\n" +
                           "    m: markdown")]
         public TableFormat Table { get; set; } = TableFormat.c;
 
@@ -34,7 +31,6 @@ namespace BbGit.ConsoleApp
             return Table switch
             {
                 TableFormat.c => TableTheme.ColumnBorders,
-                TableFormat.k => TableTheme.DataOnly,
                 TableFormat.g => TableTheme.Grid,
                 TableFormat.s => TableTheme.Borderless,
                 TableFormat.m => TableTheme.Markdown,

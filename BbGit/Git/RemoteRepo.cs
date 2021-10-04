@@ -22,13 +22,15 @@ namespace BbGit.Git
 
         #region Repository delegated members
 
-        public string Slug
+        // It's called Name in the BitBucket UI
+        public string Name
         {
             get => repository.Slug;
             set => repository.Slug = value;
         }
 
-        public string Name
+        // It's called Description in the BitBucket UI
+        public string Description
         {
             get => repository.Name;
             set => repository.Name = value;
@@ -86,7 +88,7 @@ namespace BbGit.Git
 
         public override string ToString()
         {
-            return $"{this.Slug} - {this.Name} ({this.ProjectKey})";
+            return $"{this.Name} - {this.Description} ({this.ProjectKey})";
         }
     }
 }

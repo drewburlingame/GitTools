@@ -32,16 +32,16 @@ namespace BbGit.Git
         public void CloneRepo(IConsole console, RemoteRepo remoteRepo, bool setOriginToSsh)
         {
             var localRepo =
-                new LocalRepo(remoteRepo, Path.Combine(this.currentDirectory, remoteRepo.Slug));
+                new LocalRepo(remoteRepo, Path.Combine(this.currentDirectory, remoteRepo.Name));
 
             var defaultColor = Colors.DefaultColor;
             if (localRepo.Exists)
             {
-                console.WriteLine($"{remoteRepo.Slug.ColorRepo()} already exists".ColorDefault());
+                console.WriteLine($"{remoteRepo.Name.ColorRepo()} already exists".ColorDefault());
                 return;
             }
 
-            console.WriteLine($"cloning  {remoteRepo.Slug.ColorRepo()}");
+            console.WriteLine($"cloning  {remoteRepo.Name.ColorRepo()}");
             console.WriteLine($"  from  {remoteRepo.HttpsUrl.ColorPath()}");
             console.WriteLine($"  to  {localRepo.FullPath.ColorPath()}");
 
@@ -149,7 +149,7 @@ namespace BbGit.Git
 
             return paths
                 .Where(p => onlyRepos?.Contains(p.name) ?? true)
-                .Select(p => new LocalRepo(remoteRepos.FirstOrDefault(r => r.Slug == p.name), p.path))
+                .Select(p => new LocalRepo(remoteRepos.FirstOrDefault(r => r.Name == p.name), p.path))
                 .Where(r => r.IsGitDir)
                 .OrderBy(r => r.Name)
                 .ToDisposableCollection();

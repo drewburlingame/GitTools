@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using BbGit.BitBucket;
 using BbGit.Framework;
@@ -49,27 +48,25 @@ namespace BbGit.ConsoleApp
             string namePattern = null,
             [Option(ShortName = "d", Description = "regex to match description")]
             string descPattern = null,
+            [Option(Description = "output only keys")] 
+            bool keys = false,
             [Option(ShortName = "r", LongName = "repos", Description = "include the count repositories")]
             bool includeRepoCounts = false)
         {
-            var keyRegex = keyPattern.IsNullOrEmpty() ? null : new Regex(keyPattern, RegexOptions.Compiled);
-            var nameRegex = namePattern.IsNullOrEmpty() ? null : new Regex(namePattern, RegexOptions.Compiled);
-            var descRegex = descPattern.IsNullOrEmpty() ? null : new Regex(descPattern, RegexOptions.Compiled);
-
             var projects = this.bbService
                 .GetProjects()
-                .Where(p => keyRegex is null || keyRegex.IsMatch(p.Key))
-                .Where(p => nameRegex is null || nameRegex.IsMatch(p.Name))
-                .Where(p => descRegex is null || (p.Description is not null && descRegex.IsMatch(p.Description)))
+                .WhereMatches(p => p.Key, keyPattern)
+                .WhereMatches(p => p.Name, namePattern)
+                .WhereMatches(p => p.Description, descPattern)
                 .OrderBy(p => p.Name)
                 .ToCollection();
 
             if (includeRepoCounts)
             {
-                if (tableFormatModel.Table == TableFormatModel.TableFormat.k)
+                if (keys)
                 {
                     console.Error.WriteLine("Repository counts will not be shown when only keys will be output");
-                    console.Error.WriteLine("Do not include repository counts or do not set the table format to 'k'");
+                    console.Error.WriteLine("Do not include repository counts or do not specify '--keys'");
                     return ExitCodes.ValidationError.Result;
                 }
 
@@ -100,7 +97,7 @@ namespace BbGit.ConsoleApp
             }
             else
             {
-                if (tableFormatModel?.Table == TableFormatModel.TableFormat.k)
+                if (keys)
                 {
                     projects
                         .Select(p => p.Key)
@@ -125,42 +122,44 @@ namespace BbGit.ConsoleApp
             List<string> projectKeys,
             [Option(ShortName = "n", Description = "regex to match name")]
             string namePattern = null,
-            [Option(ShortName = "s", Description = "regex to match slug")]
-            string slugPattern = null,
-            [Option(ShortName = "c")]
-            bool? isCloned = null)
+            [Option(ShortName = "d", Description = "regex to match description")]
+            string descPattern = null,
+            [Option(Description = "output only keys")]
+            bool keys = false,
+            [Option(ShortName = "c", Description = "return only cloned")]
+            bool cloned = false,
+            [Option(ShortName = "u", Description = "return only uncloned")]
+            bool uncloned = false)
         {
             var projects = this.bbService
                 .GetProjects()
-                .Where(p => projectKeys.Contains(p.Key))
+                .Where(p => projectKeys?.Contains(p.Key) ?? true)
                 .ToCollection();
 
             var localRepos = this.gitService.GetLocalRepos();
 
-            var nameRegex = namePattern.IsNullOrEmpty() ? null : new Regex(namePattern, RegexOptions.Compiled);
-            var slugRegex = slugPattern.IsNullOrEmpty() ? null : new Regex(slugPattern, RegexOptions.Compiled);
-
             var remoteRepos = this.bbService
                 .GetRepos(projects.Select(p => p.Name).ToCollection())
-                .Where(p => nameRegex is null || nameRegex.IsMatch(p.Name))
-                .Where(p => slugRegex is null || slugRegex.IsMatch(p.Slug));
+                .WhereMatches(p => p.Name, namePattern)
+                .WhereMatches(p => p.Description, descPattern);
 
+            bool? isCloned = cloned ? true : uncloned ? false : null;
             var repoPairs = localRepos.PairRepos(remoteRepos, mustHaveRemote: true, isCloned).Values;
 
-            if (tableFormatModel?.Table == TableFormatModel.TableFormat.k)
+            if (keys)
             {
                 repoPairs
-                    .OrderBy(p => p.Remote.Name)
-                    .Select(p => p.Remote.Slug)
+                    .OrderBy(p => p.Remote.Description)
+                    .Select(p => p.Remote.Name)
                     .ForEach(console.WriteLine);
             }
             else
             {
                 var rows = repoPairs
-                    .OrderBy(p => p.Remote.Name)
+                    .OrderBy(p => p.Remote.Description)
                     .Select(p => new
                     {
-                        p.Remote.Slug,
+                        Slug = p.Remote.Name,
                         p.Remote.ProjectKey,
                         Cloned = p.Local is not null,
                         p.Remote.Public,
@@ -180,7 +179,7 @@ namespace BbGit.ConsoleApp
             [Option(ShortName = "s")] bool setOriginToSsh = false)
         {
             var repositories = this.bbService.GetRepos()
-                .Where(r => repos.Contains(r.Slug))
+                .Where(r => repos.Contains(r.Name))
                 .ToList();
 
             console.WriteLine($"cloning {repositories.Count} repos");

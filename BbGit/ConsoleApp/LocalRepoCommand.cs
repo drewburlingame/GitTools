@@ -41,8 +41,8 @@ namespace BbGit.ConsoleApp
             bool showTable,
             [Option(ShortName = "P", Description = "show project information. requires BB API call")]
             bool showProjectInfo,
-            [Option(ShortName = "r", LongName = "repo", Description = "regex to filter repo name by")]
-            string repoRegex,
+            [Option(ShortName = "n", LongName = "name", Description = "regex to filter repo name by")]
+            string nameRegex,
             [Option(ShortName = "l", Description = "where local branch is checked out")]
             bool isInLocalBranch,
             [Option(ShortName = "b", Description = "with local branches")]
@@ -51,18 +51,8 @@ namespace BbGit.ConsoleApp
             bool withLocalChanges,
             [Option(ShortName = "s", Description = "with stashes")]
             bool withLocalStashes,
-            [Option(ShortName = "o", Description = "where options:b,w,s are `OR` instead of `AND`")]
-            bool orLocalChecks,
-            [Option(
-                ShortName = "i",
-                LongName = "includeIgnored",
-                Description = "includes projects ignored in configuration")]
-            bool includeIgnored,
-            [Option(
-                ShortName = "I",
-                LongName = "onlyIgnored",
-                Description = "lists only projects ignored in configuration")]
-            bool onlyIgnored)
+            [Option(ShortName = "o", Description = "treat options:b,w,s as `OR` instead of `AND`")]
+            bool orLocalChecks)
         {
             using (var localRepos = this.gitService.GetLocalRepos())
             {
@@ -70,9 +60,9 @@ namespace BbGit.ConsoleApp
 
                 var repos = localRepos.AsEnumerable();
 
-                if (repoRegex != null)
+                if (nameRegex != null)
                 {
-                    var regex = new Regex(repoRegex, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                    var regex = new Regex(nameRegex, RegexOptions.Compiled | RegexOptions.IgnoreCase);
                     repos = repos.Where(r => regex.IsMatch(r.Name));
                 }
 
