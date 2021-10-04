@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using BbGit.ConsoleUtils;
 using BbGit.Git;
-using Colorful;
 using MoreLinq;
-using Console = Colorful.Console;
 
 namespace BbGit.Framework
 {
@@ -26,10 +24,20 @@ namespace BbGit.Framework
             return enumerable is ICollection<T> coll ? coll : enumerable.ToList();
         }
 
-        public static IEnumerable<T> WhereMatches<T>(this IEnumerable<T> items, Func<T, string> getValue, string? regexPattern)
-            => string.IsNullOrEmpty(regexPattern)
-                ? items 
-                : items.WhereMatches(getValue, new Regex(regexPattern));
+        public static bool IsIn<T>(this T item, params T[] collection) => collection.Contains(item);
+        public static bool IsIn<T>(this T item, IEnumerable<T> collection) => collection.Contains(item);
+
+        public static IEnumerable<T> WhereIf<T>(this IEnumerable<T> items, bool condition, Func<T, bool> filter) =>
+            condition ? items.Where(filter) : items;
+
+        public static IEnumerable<T> WhereMatches<T>(this IEnumerable<T> items, Func<T, string> getValue, 
+            string? regexPattern, 
+            RegexOptions regexOptions = RegexOptions.Compiled)
+        {
+            return string.IsNullOrEmpty(regexPattern)
+                ? items
+                : items.WhereMatches(getValue, new Regex(regexPattern, regexOptions));
+        }
 
         public static IEnumerable<T> WhereMatches<T>(this IEnumerable<T> items, Func<T, string> getValue, Regex? regex)
             => items.Where(t =>
@@ -54,26 +62,26 @@ namespace BbGit.Framework
 
         public static void SafelyForEach(
             this IEnumerable<RemoteRepo> values,
-            Action<RemoteRepo> action,
+            Action<RemoteRepo> action, CancellationToken cancellationToken,
             int allowedErrorsInARow = 2,
             bool summarizeErrors = false)
         {
-            values.SafelyForEach(r => r.Description, action, allowedErrorsInARow, summarizeErrors);
+            values.SafelyForEach(r => r.Description, action, cancellationToken, allowedErrorsInARow, summarizeErrors);
         }
 
         public static void SafelyForEach(
             this IEnumerable<LocalRepo> values,
-            Action<LocalRepo> action,
+            Action<LocalRepo> action, CancellationToken cancellationToken,
             int allowedErrorsInARow = 2,
             bool summarizeErrors = false)
         {
-            values.SafelyForEach(r => r.Name, action, allowedErrorsInARow, summarizeErrors);
+            values.SafelyForEach(r => r.Name, action, cancellationToken, allowedErrorsInARow, summarizeErrors);
         }
 
         public static void SafelyForEach<T>(
             this IEnumerable<T> values,
             Func<T, string> getName,
-            Action<T> action,
+            Action<T> action, CancellationToken cancellationToken,
             int allowedErrorsInARow = 2,
             bool summarizeErrors = false)
         {
@@ -84,10 +92,8 @@ namespace BbGit.Framework
             var errorsInARow = 0;
             items.ForEach((r, i) =>
             {
-                Console.WriteLineFormatted(
-                    $"{i + 1} of {items.Count} - " + "{0}",
-                    new Formatter(getName(r), Colors.BranchColor),
-                    Colors.DefaultColor);
+                cancellationToken.ThrowIfCancellationRequested();
+                Console.WriteLine($"{i + 1} of {items.Count} - {getName(r).ColorBranch()}".ColorDefault());
 
                 try
                 {
@@ -113,17 +119,11 @@ namespace BbGit.Framework
             if (summarizeErrors && errors.Count > 0)
             {
                 Console.Out.WriteLine("");
-                Console.WriteLine($"The following {errors.Count} of {items.Count} operations failed",
-                    Color.Red);
+                Console.WriteLine($"The following {errors.Count} of {items.Count} operations failed".ColorError());
                 Console.Out.WriteLine("");
 
-                errors.ForEach(e => Console.WriteLineFormatted(
-                    "{0} of {1}: {2} > {3}",
-                    new Formatter(e.index, Colors.DefaultColor),
-                    new Formatter(items.Count, Colors.DefaultColor),
-                    new Formatter(e.item, Colors.RepoColor),
-                    new Formatter(e.ex.Message, Color.Red),
-                    Colors.DefaultColor));
+                errors.ForEach(e => Console.WriteLine(
+                    $"{e.index} of {items.Count}: {e.item.ColorRepo()} > {e.ex.Message.ColorError()}".ColorDefault()));
             }
         }
 

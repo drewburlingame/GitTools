@@ -4,13 +4,24 @@
     {
         #region Themes
 
-        public static TableTheme ColumnBorders => new(" ", 
+        public static TableTheme ColumnLines => new(" ", 
             new Level('┌', '┬', '─',  '┐'),
             new Level('│', '│', ' ', '│'),
             new Level('├', '┼', '─',  '┤'),
             new Level('│', '│', ' ', '│'),
             null,
             new Level('└', '┴', '─',  '┘'))
+        {
+            Multiline = true
+        };
+
+        public static TableTheme RowLines => new(" ",
+            new Level('┌', '─', '─', '┐'),
+            new Level('│', ' ', ' ', '│'),
+            new Level('├', '─', '─', '┤'),
+            new Level('│', ' ', ' ', '│'),
+            new Level('├', '─', '─', '┤'),
+            new Level('└', '─', '─', '┘'))
         {
             Multiline = true
         };
@@ -91,6 +102,8 @@
         public Level Bottom { get; }
 
         public bool Multiline { get; set; }
+
+        public TableTheme WithoutHeader => new(Padding, Top, null, null, Rows, RowSeparator, Bottom);
 
         public int Width(int columnCount) => 3 + (Padding.Length * 2 * columnCount);
 

@@ -16,7 +16,6 @@
   <ItemGroup>
     <PackageReference Include="Autofac" Version="6.2.0" />
     <PackageReference Include="Bitbucket.Net" Version="2.1.14" />
-    <PackageReference Include="Colorful.Console" Version="1.2.15" />
     <PackageReference Include="CommandDotNet" Version="4.1.13" />
     <PackageReference Include="CommandDotNet.DataAnnotations" Version="1.0.1" />
     <PackageReference Include="CommandDotNet.IoC.Autofac" Version="3.0.0" />

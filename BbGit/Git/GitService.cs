@@ -1,40 +1,43 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using BbGit.BitBucket;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;
-using Colorful;
 using CommandDotNet;
 using CommandDotNet.Rendering;
 using LibGit2Sharp;
 using LibGit2Sharp.Handlers;
-using Pastel;
-using Console = Colorful.Console;
 
 namespace BbGit.Git
 {
     public class GitService
     {
-        private readonly BbService bbService;
-        private readonly CredentialsHandler credentialsProvider;
+
+        private static readonly Regex CaptureProjectKeyFromHttpUrl = new("projects/(?<projectkey>.[A-Za-z0-9])");
+        private static readonly Regex CaptureProjectKeyFromSshUrl = new("ssh://.*/(?<projectkey>.[A-Za-z0-9])/");
 
         private readonly string currentDirectory = Directory.GetCurrentDirectory();
 
-        public GitService(BbService bbService, CredentialsHandler credentialsProvider)
+        private readonly IConsole console;
+        private readonly BbService bbService;
+        private readonly CredentialsHandler credentialsProvider;
+
+
+        public GitService(IConsole console, BbService bbService, CredentialsHandler credentialsProvider)
         {
+            this.console = console;
             this.bbService = bbService;
             this.credentialsProvider = credentialsProvider;
         }
 
-        public void CloneRepo(IConsole console, RemoteRepo remoteRepo, bool setOriginToSsh)
+        public void CloneRepo(RemoteRepo remoteRepo, bool setOriginToSsh)
         {
             var localRepo =
-                new LocalRepo(remoteRepo, Path.Combine(this.currentDirectory, remoteRepo.Name));
-
-            var defaultColor = Colors.DefaultColor;
+                new LocalRepo(Path.Combine(this.currentDirectory, remoteRepo.Name), remoteRepo);
+            
             if (localRepo.Exists)
             {
                 console.WriteLine($"{remoteRepo.Name.ColorRepo()} already exists".ColorDefault());
@@ -45,48 +48,52 @@ namespace BbGit.Git
             console.WriteLine($"  from  {remoteRepo.HttpsUrl.ColorPath()}");
             console.WriteLine($"  to  {localRepo.FullPath.ColorPath()}");
 
-            Repository.Clone(
-                remoteRepo.HttpsUrl,
-                localRepo.FullPath,
-                new CloneOptions
-                {
-                    CredentialsProvider = this.credentialsProvider
-                });
-
-            localRepo.EvaluateIfExists();
-            if (setOriginToSsh)
+            try
             {
-                GitUrls.SetOriginToSsh(localRepo);
+                Repository.Clone(
+                    remoteRepo.HttpsUrl,
+                    localRepo.FullPath,
+                    new CloneOptions
+                    {
+                        CredentialsProvider = this.credentialsProvider
+                    });
+
+                // remove ReadOnly
+                localRepo.FullPath.SetFileAttributes(FileAttributes.Normal);
+            }
+            catch (Exception e)
+            {
+                e.Data.Add("remote", $"name:{remoteRepo.Name} http:{remoteRepo.HttpsUrl}");
+                e.Data.Add("local", $"name:{localRepo.Name} path:{localRepo.FullPath}");
+                throw;
             }
 
-            localRepo.EvaluateIfExists();
+            localRepo.SetGitRepo();
+            localRepo.RemoteRepo = remoteRepo;
+            if (setOriginToSsh)
+            {
+                localRepo.SetOriginToSsh();
+            }
+
+            localRepo.SetGitRepo();
         }
 
         public void PullLatest(LocalRepo localRepo, bool prune, string branchName = "master")
         {
-            var repoColor = Colors.RepoColor;
-            var branchColor = Colors.BranchColor;
             if (!localRepo.GitRepo.Head.FriendlyName.Equals(branchName))
             {
-                Console.WriteLineFormatted(
-                    "Skipping pull for {0}. Expected branch {1} but was {2}",
-                    new Formatter(localRepo.Name, repoColor),
-                    new Formatter(branchName, branchColor),
-                    new Formatter(localRepo.GitRepo.Head.FriendlyName, branchColor),
-                    Color.Red);
+                console.WriteLine($"Skipping pull for {localRepo.Name.ColorRepo()}. " +
+                                  $"Expected branch {branchName.ColorBranch()} " +
+                                  $"but was {localRepo.GitRepo.Head.FriendlyName.ColorBranch()}".ColorError());
 
                 return;
             }
 
             // TODO: git stash > co target-branch > pull > co orig-branch > git stash pop
 
-            Console.WriteLineFormatted(
-                "pulling " + (prune ? "and pruning " : null) + "branch {0} for {1}",
-                new Formatter(branchName, branchColor),
-                new Formatter(localRepo.Name, repoColor),
-                Colors.DefaultColor);
+            console.WriteLine($"pulling { (prune ? "and pruning " : null)} branch {branchName.ColorBranch()} for {localRepo.Name.ColorRepo()}".ColorDefault());
 
-            using (GitUrls.ToggleHttpsUrl(localRepo))
+            using (localRepo.ToggleHttpsUrl())
             {
                 string compressedObjects = null;
                 string totals = null;
@@ -120,36 +127,48 @@ namespace BbGit.Git
 
                 if (compressedObjects != null)
                 {
-                    Console.WriteLine(compressedObjects);
+                    console.WriteLine(compressedObjects);
                 }
 
                 if (totals != null)
                 {
-                    Console.WriteLine(totals);
+                    console.WriteLine(totals);
                 }
             }
         }
 
-        public IEnumerable<string> GetLocalRepoNames(ICollection<string> onlyRepos = null)
+        public DisposableCollection<LocalRepo> GetLocalRepos(ICollection<string> onlyProjKeys = null, ICollection<string> onlyRepoNames = null)
         {
-            return this.GetLocalDirectoryPaths()
-                .Where(p => onlyRepos?.Contains(p.name) ?? true)
-                .Select(p => p.path)
-                .ToList();
-        }
+            var directories = GetLocalDirectoryPaths();
 
-        public DisposableCollection<LocalRepo> GetLocalRepos(ICollection<string> onlyRepos = null)
-        {
-            var paths = GetLocalDirectoryPaths();
+            Dictionary<string, Dictionary<string, RemoteRepo>> remotesByProj = this.bbService.GetRepos()
+                .GroupBy(r => r.ProjectKey)
+                .ToDictionary(
+                    g => g.Key, 
+                    g => g.ToDictionary(r => r.Name));
 
-            var remoteRepos = 
-                this.bbService
-                .GetRepos((string)null)
-                .ToList();
+            RemoteRepo GetRemote(LocalRepo local)
+            {
+                var originUrl = local.GetOrigin().Url;
+                var match = originUrl.StartsWith("ssh") 
+                    ? CaptureProjectKeyFromSshUrl.Match(originUrl) 
+                    : CaptureProjectKeyFromHttpUrl.Match(originUrl);
 
-            return paths
-                .Where(p => onlyRepos?.Contains(p.name) ?? true)
-                .Select(p => new LocalRepo(remoteRepos.FirstOrDefault(r => r.Name == p.name), p.path))
+                if (match.Success)
+                {
+                    var projectKey = match?.Groups["projectkey"]?.Value.ToUpper();
+                    return remotesByProj
+                        .GetValueOrDefault(projectKey)?
+                        .GetValueOrDefault(local.Name);
+                }
+
+                return null;
+            }
+
+            return directories
+                .Where(d => onlyRepoNames?.Contains(d.Name, StringComparer.OrdinalIgnoreCase) ?? true)
+                .Select(d => new LocalRepo(d.FullName, GetRemote))
+                .Where(r => onlyProjKeys is null || r.RemoteRepo is not null && onlyProjKeys.Contains(r.RemoteRepo.ProjectKey))
                 .Where(r => r.IsGitDir)
                 .OrderBy(r => r.Name)
                 .ToDisposableCollection();
@@ -161,13 +180,13 @@ namespace BbGit.Git
             // Disposing the collection seems to fix it.
         }
 
-        private IEnumerable<(string name, string path)> GetLocalDirectoryPaths()
+        private IEnumerable<DirectoryInfo> GetLocalDirectoryPaths()
         {
             try
             {
                 return Directory
                     .GetDirectories(this.currentDirectory)
-                    .Select(d => (Path.GetDirectoryName(d), d));
+                    .Select(d => new DirectoryInfo(d));
             }
             catch (Exception e)
             {

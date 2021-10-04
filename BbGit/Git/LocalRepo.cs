@@ -1,13 +1,16 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using BbGit.Framework;
 using LibGit2Sharp;
 
 namespace BbGit.Git
 {
     public class LocalRepo : IDisposable
     {
-        private bool isDisposing;
+        private static readonly string[] MainBranchNames = {"master", "develop"};
+
+    private bool isDisposing;
         public string FullPath { get; }
         public string Name { get; }
         public bool Exists { get; private set; }
@@ -16,13 +19,13 @@ namespace BbGit.Git
 
         public string CurrentBranchName => this.GitRepo.Head.FriendlyName;
 
-        public bool IsInLocalBranch => this.CurrentBranchName != "master";
+        public bool IsInLocalBranch => !CurrentBranchName.IsIn(MainBranchNames);
 
-        public int LocalBranchCount => this.GitRepo.Branches.Count(b => !b.IsRemote && b.FriendlyName != "master");
+        public int LocalBranchCount => GitRepo.Branches.Count(b => !b.IsRemote && !b.FriendlyName.IsIn(MainBranchNames));
 
-        public int RemoteBranchCount => this.GitRepo.Branches.Count(b => b.IsRemote);
+        public int RemoteBranchCount => GitRepo.Branches.Count(b => b.IsRemote);
 
-        public int StashCount => this.GitRepo.Stashes.Count();
+        public int StashCount => GitRepo.Stashes.Count();
 
         public int LocalChangesCount => this.GitRepo
             .RetrieveStatus(new StatusOptions
@@ -36,25 +39,23 @@ namespace BbGit.Git
 
         public RemoteRepo RemoteRepo { get; set; }
 
-        public LocalRepo(RemoteRepo remoteRepo, Repository gitRepo)
-            : this(remoteRepo, gitRepo.Info.WorkingDirectory, gitRepo)
+        public LocalRepo(string fullPath, RemoteRepo remoteRepo)
         {
-        }
-
-        public LocalRepo(RemoteRepo remoteRepo, string fullPath)
-            : this(remoteRepo, fullPath, null)
-        {
+            this.FullPath = fullPath;
+            this.Name = new DirectoryInfo(this.FullPath).Name;
+            this.RemoteRepo = remoteRepo;
+            this.SetGitRepo();
         }
 
         /// <summary>private because it doesn't make sense to provide both</summary>
-        private LocalRepo(RemoteRepo remoteRepo, string fullPath, Repository gitRepo = null)
+        public LocalRepo(string fullPath, Func<LocalRepo, RemoteRepo> getRemote)
         {
-            this.RemoteRepo = remoteRepo;
             this.FullPath = fullPath;
-            this.GitRepo = gitRepo;
-            this.Exists = Directory.Exists(this.FullPath);
             this.Name = new DirectoryInfo(this.FullPath).Name;
-            this.EvaluateIfExists();
+            if (this.SetGitRepo())
+            {
+                this.RemoteRepo = getRemote(this);
+            }
         }
 
         public void Dispose()
@@ -79,7 +80,7 @@ namespace BbGit.Git
         }
 
         /// <summary>Evaluates if the local repo exists and if so, updates related properties</summary>
-        public void EvaluateIfExists()
+        public bool SetGitRepo()
         {
             this.Exists = Directory.Exists(this.FullPath);
             if (this.Exists)
@@ -88,8 +89,11 @@ namespace BbGit.Git
                 if (this.IsGitDir)
                 {
                     this.GitRepo ??= new Repository(this.FullPath);
+                    return true;
                 }
             }
+
+            return false;
         }
 
         private static bool IsGitDirectory(string directoryPath)

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using BbGit.BitBucket;
 using BbGit.Framework;
@@ -26,13 +27,12 @@ namespace BbGit.ConsoleApp
         }
 
         public Task<int> Interceptor(InterceptorExecutionDelegate next,
-            IConsole console,
             [Option(ShortName = "i")] bool ignoreCache,
             [Option(ShortName = "s")] bool skipCacheRefresh,
             [Option(ShortName = "f")] bool forceCacheRefresh,
             [Option(ShortName = "w")] bool warnOnCacheRefresh)
         {
-            bbService.RefreshCaches(console, ignoreCache, skipCacheRefresh, forceCacheRefresh, warnOnCacheRefresh);
+            bbService.RefreshCaches(ignoreCache, skipCacheRefresh, forceCacheRefresh, warnOnCacheRefresh);
             return next();
         }
 
@@ -40,7 +40,7 @@ namespace BbGit.ConsoleApp
             Description = "List projects from the server",
             ExtendedHelpText =
                 "for regex flags, see https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-options")]
-        public int Proj(IConsole console,
+        public int Proj(IConsole console, CancellationToken cancellationToken,
             TableFormatModel tableFormatModel,
             [Option(ShortName = "k", Description = "regex to match key")]
             string keyPattern = null,
@@ -48,10 +48,8 @@ namespace BbGit.ConsoleApp
             string namePattern = null,
             [Option(ShortName = "d", Description = "regex to match description")]
             string descPattern = null,
-            [Option(Description = "output only keys")] 
-            bool keys = false,
-            [Option(ShortName = "r", LongName = "repos", Description = "include the count repositories")]
-            bool includeRepoCounts = false)
+            [Option(Description = "output only keys")]
+            bool keys = false)
         {
             var projects = this.bbService
                 .GetProjects()
@@ -61,15 +59,14 @@ namespace BbGit.ConsoleApp
                 .OrderBy(p => p.Name)
                 .ToCollection();
 
-            if (includeRepoCounts)
+            if (keys)
             {
-                if (keys)
-                {
-                    console.Error.WriteLine("Repository counts will not be shown when only keys will be output");
-                    console.Error.WriteLine("Do not include repository counts or do not specify '--keys'");
-                    return ExitCodes.ValidationError.Result;
-                }
-
+                projects
+                    .Select(p => p.Key)
+                    .ForEach(console.WriteLine);
+            }
+            else
+            {
                 var localRepos = this.gitService.GetLocalRepos();
 
                 var remoteRepos = this.bbService
@@ -80,35 +77,32 @@ namespace BbGit.ConsoleApp
                 var remoteRepoCounts = repoPairs
                     .GroupBy(p => p.Remote.ProjectKey)
                     .ToDictionary(
-                        g => g.Key, 
-                        g => new {remote=g.Count(), local=g.Count(r => r.Local is not null)});
+                        g => g.Key,
+                        g => new { remote = g.Count(), local = g.Count(r => r.Local is not null) });
 
                 var records = projects
                     .Select(p => new
                     {
-                        p.Key, p.Name, p.Description, p.Id, p.Public, p.Type,
-                        Repos = DictionaryExtensions.GetValueOrDefault(remoteRepoCounts, p.Key)?.remote ?? 0,
-                        Cloned = DictionaryExtensions.GetValueOrDefault(remoteRepoCounts, p.Key)?.local ?? 0
+                        p.Key,
+                        p.Name,
+                        p.Description,
+                        p.Id,
+                        p.Public,
+                        p.Type,
+                        Repos = remoteRepoCounts.GetValueOrDefault(p.Key)?.remote ?? 0,
+                        Cloned = remoteRepoCounts.GetValueOrDefault(p.Key)?.local ?? 0
                     });
 
-                new Table(console, tableFormatModel?.GetTheme(), includeCount: true)
-                    .OverrideColumn(records, r => r.Type, new Column("Type"){ WrapText = false })
+                new Table(console, tableFormatModel?.GetTheme(), includeCount: true, cancellationToken)
+                    .OverrideColumn(records, r => r.Key, c => c.WrapText = false)
+                    .OverrideColumn(records, r => r.Name, c => c.WrapText = false)
+                    .OverrideColumn(records, r => r.Type, c => c.WrapText = false)
+                    .OverrideColumn(records, r => r.Description, c =>
+                    {
+                        c.WrapText = true;
+                        c.MaxWidth = 70;
+                    })
                     .Write(records);
-            }
-            else
-            {
-                if (keys)
-                {
-                    projects
-                        .Select(p => p.Key)
-                        .ForEach(console.WriteLine);
-                }
-                else
-                {
-                    new Table(console, tableFormatModel?.GetTheme(), includeCount: true)
-                        .OverrideColumn(projects, r => r.Type, new Column("Type") { WrapText = false })
-                        .Write(projects.Select(p => new { p.Key, p.Name, p.Description, p.Public, p.Type }));
-                }
             }
 
             return ExitCodes.Success.Result;
@@ -116,32 +110,53 @@ namespace BbGit.ConsoleApp
 
         [Command(Description = "show the repos for the given projects")]
         public void Repo(
-            IConsole console, 
+            IConsole console, CancellationToken cancellationToken, 
             TableFormatModel tableFormatModel,
-            [Operand(Description = "the projects containing the repos")]
-            List<string> projectKeys,
+            ProjOrRepoKeys projOrRepoKeys,
             [Option(ShortName = "n", Description = "regex to match name")]
-            string namePattern = null,
+            string namePattern,
             [Option(ShortName = "d", Description = "regex to match description")]
-            string descPattern = null,
+            string descPattern,
             [Option(Description = "output only keys")]
-            bool keys = false,
+            bool keys,
             [Option(ShortName = "c", Description = "return only cloned")]
-            bool cloned = false,
+            bool cloned,
             [Option(ShortName = "u", Description = "return only uncloned")]
-            bool uncloned = false)
+            bool uncloned,
+            [Option(LongName = "public", Description = "return only public")]
+            bool onlyPublic,
+            [Option(LongName = "private", Description = "return only private")]
+            bool onlyPrivate,
+            [Option(ShortName = "x", Description = "exclude repositories marked obsolete")]
+            bool excludeObsolete)
         {
+            if (cloned && uncloned)
+            {
+                throw new ArgumentException("cannot request both cloned and uncloned");
+            }
+            if (onlyPublic && onlyPrivate)
+            {
+                throw new ArgumentException("cannot request both public and private");
+            }
+
+            var projKeys = projOrRepoKeys.GetProjKeysOrNull()?.ToHashSet();
+            var repoKeys = projOrRepoKeys.GetRepoKeysOrNull()?.ToHashSet();
+
             var projects = this.bbService
                 .GetProjects()
-                .Where(p => projectKeys?.Contains(p.Key) ?? true)
+                .WhereIf(projKeys is not null, p => projKeys!.Contains(p.Key))
                 .ToCollection();
 
             var localRepos = this.gitService.GetLocalRepos();
 
             var remoteRepos = this.bbService
                 .GetRepos(projects.Select(p => p.Name).ToCollection())
-                .WhereMatches(p => p.Name, namePattern)
-                .WhereMatches(p => p.Description, descPattern);
+                .WhereMatches(r => r.Name, namePattern)
+                .WhereMatches(r => r.Description, descPattern)
+                .WhereIf(onlyPublic, r => r.Public)
+                .WhereIf(onlyPrivate, r => !r.Public)
+                .WhereIf(repoKeys is not null, r => repoKeys!.Contains(r.Name))
+                .WhereIf(excludeObsolete, r => !r.Name.Contains("obsolete", StringComparison.OrdinalIgnoreCase));
 
             bool? isCloned = cloned ? true : uncloned ? false : null;
             var repoPairs = localRepos.PairRepos(remoteRepos, mustHaveRemote: true, isCloned).Values;
@@ -159,33 +174,31 @@ namespace BbGit.ConsoleApp
                     .OrderBy(p => p.Remote.Description)
                     .Select(p => new
                     {
-                        Slug = p.Remote.Name,
+                        p.Remote.Name,
                         p.Remote.ProjectKey,
                         Cloned = p.Local is not null,
                         p.Remote.Public,
                         p.Remote.StatusMessage
                     });
-                new Table(console, tableFormatModel?.GetTheme(), includeCount: true)
+                new Table(console, tableFormatModel?.GetTheme(), includeCount: true, cancellationToken)
+                    .OverrideColumn(rows, c => c.ProjectKey, c => c.WrapText = false)
+                    .OverrideColumn(rows, c => c.Name, c => c.WrapText = false)
                     .Write(rows);
             }
         }
 
-
         [Command(Description = "Clone all repositories matching the search criteria")]
         public void Clone(
-            IConsole console,
-            [Operand]
-            [Required] string[] repos,
-            [Option(ShortName = "s")] bool setOriginToSsh = false)
+            IConsole console, CancellationToken cancellationToken,
+            [Operand] [Required] string[] repos,
+            [Option(LongName = "http", Description = "Leave the origin as http, otherwise it will be set to ssh")] 
+            bool setHttpOrigin = false)
         {
-            var repositories = this.bbService.GetRepos()
+            this.bbService.GetRepos()
                 .Where(r => repos.Contains(r.Name))
-                .ToList();
-
-            console.WriteLine($"cloning {repositories.Count} repos");
-            repositories
                 .SafelyForEach(
-                    r => this.gitService.CloneRepo(console, r, setOriginToSsh), 
+                    r => this.gitService.CloneRepo(r, !setHttpOrigin), 
+                    cancellationToken,
                     summarizeErrors: true);
         }
     }

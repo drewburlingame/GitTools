@@ -14,15 +14,17 @@ namespace BbGit.BitBucket
 {
     public class BbService
     {
+        private readonly IConsole console;
         private readonly BitbucketClient bbServerClient;
         private bool ignoreCache;
 
-        public BbService(BitbucketClient bbServerClient)
+        public BbService(IConsole console, BitbucketClient bbServerClient)
         {
+            this.console = console;
             this.bbServerClient = bbServerClient;
         }
 
-        public void RefreshCaches(IConsole console,
+        public void RefreshCaches(
             bool ignoreCache, bool skipCacheRefresh, bool forceCacheRefresh, bool warnOnCacheRefresh)
         {
             this.ignoreCache = ignoreCache;
@@ -75,7 +77,6 @@ namespace BbGit.BitBucket
                     }
                 }
             }
-
         }
 
         public IEnumerable<RemoteProj> GetProjects()

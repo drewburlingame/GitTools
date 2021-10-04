@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Drawing;
 using CommandDotNet.Diagnostics;
-using Console = Colorful.Console;
 
 namespace BbGit.ConsoleUtils
 {
@@ -9,7 +7,7 @@ namespace BbGit.ConsoleUtils
     {
         public static void Print(this Exception e)
         {
-            Console.WriteLine(e.Print(includeData: true, includeProperties: true, includeStackTrace: true), Color.Red);
+            Console.WriteLine(e.Print(includeData: true, includeProperties: true, includeStackTrace: true).ColorError());
         }
     }
 }

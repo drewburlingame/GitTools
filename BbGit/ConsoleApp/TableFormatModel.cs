@@ -10,8 +10,10 @@ namespace BbGit.ConsoleApp
         {
             /// <summary>simple</summary>
             s,
-            /// <summary>column borders</summary>
+            /// <summary>column lines</summary>
             c,
+            /// <summary>row lines</summary>
+            r,
             /// <summary>grid lines</summary>
             g,
             /// <summary>markdown</summary>
@@ -20,7 +22,8 @@ namespace BbGit.ConsoleApp
  
         [Option(
             ShortName = "t", 
-            Description = "  c: column borders\n" +
+            Description = "  c: column lines\n" +
+                          "    4: row lines\n" +
                           "    g: grid lines\n" +
                           "    s: header separator\n" +
                           "    m: markdown")]
@@ -30,7 +33,8 @@ namespace BbGit.ConsoleApp
         {
             return Table switch
             {
-                TableFormat.c => TableTheme.ColumnBorders,
+                TableFormat.c => TableTheme.ColumnLines,
+                TableFormat.r => TableTheme.RowLines,
                 TableFormat.g => TableTheme.Grid,
                 TableFormat.s => TableTheme.Borderless,
                 TableFormat.m => TableTheme.Markdown,

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading;
 using BbGit.Framework;
 using CommandDotNet;
 using CommandDotNet.Rendering;
@@ -14,28 +15,53 @@ namespace BbGit.Tables
     {
         private readonly IConsole console;
         private readonly bool includeCount;
-        public TableTheme Theme { get; }
+        private readonly CancellationToken cancellationToken;
+        public TableTheme Theme { get; private set; }
 
         private Dictionary<string, Column> columnsByProperty;
 
-        public Table(IConsole console, TableTheme theme = null, bool includeCount = false)
+        public bool HideZeros { get; set; }
+
+        public Table(IConsole console, TableTheme theme = null, bool includeCount = false, CancellationToken? cancellationToken = null)
         {
             this.console = console;
             this.includeCount = includeCount;
-            Theme = theme ?? TableTheme.ColumnBorders;
+            this.cancellationToken = cancellationToken ?? CancellationToken.None;
+            Theme = theme ?? TableTheme.ColumnLines;
         }
 
         public Table OverrideColumn<TSource,TProperty>(
             IEnumerable<TSource> sourceRows, 
             Expression<Func<TSource, TProperty>> property, Column column)
         {
+            return OverrideColumn(property.GetPropertyInfo().Name, column);
+        }
+
+        public Table OverrideColumn<TSource, TProperty>(
+            IEnumerable<TSource> sourceRows,
+            Expression<Func<TSource, TProperty>> property, Action<Column> modify)
+        {
+            var propertyInfo = property.GetPropertyInfo();
+            var column = BuildColumn(propertyInfo.Name, propertyInfo.PropertyType);
+            modify(column);
+            return OverrideColumn(propertyInfo.Name, column);
+        }
+
+
+        private Table OverrideColumn(string name, Column column)
+        {
             columnsByProperty ??= new Dictionary<string, Column>();
-            columnsByProperty.Add(property.GetPropertyInfo().Name, column);
+            columnsByProperty.Add(name, column);
             return this;
         }
-        
+
         public void Write<T>(IEnumerable<T> rows)
         {
+            if (typeof(T).IsPrimitive || typeof(T) == typeof(string))
+            {
+                throw new Exception("Table.Write<T> does not support primitive types or strings.  Use Write(IEnumerable<IEnumerable<object>> rows)");
+            }
+
             var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
             Column GetOverriden(PropertyInfo property) => 
@@ -44,25 +70,29 @@ namespace BbGit.Tables
             if (this.Count == 0)
             {
                 base.AddRange(properties.Select(p =>
-                {
-                    // TODO: make bool align center and conversion to text be settings in the theme or table params
-                    return GetOverriden(p)
-                           ?? new Column(p.Name)
-                           {
-                               WrapText = p.PropertyType == typeof(string),
-                               HAlign = p.PropertyType.IsNumeric()
-                                   ? HAlign.right
-                                   : p.PropertyType == typeof(bool)
-                                       ? HAlign.center
-                                       : HAlign.left,
-                               DisplayAs = p.PropertyType == typeof(bool)
-                                   ? o => o is true ? "x" : null
-                                   : null
-                           };
-                }));
+                    GetOverriden(p) ?? BuildColumn(p.Name, p.PropertyType)));
             }
             
             Write(rows.Select(row => properties.Select(p => p.GetValue(row))));
+        }
+
+        private Column BuildColumn(string name, Type type)
+        {
+            // TODO: make bool align center and conversion to text be settings in the theme or table params
+            return new Column(name)
+            {
+                WrapText = type == typeof(string),
+                HAlign = type.IsNumeric()
+                    ? HAlign.right
+                    : type == typeof(bool)
+                        ? HAlign.center
+                        : HAlign.left,
+                DisplayAs = HideZeros && type.IsNumeric()
+                    ? o => o is 0 ? null : o.ToString()
+                    : type == typeof(bool)
+                        ? o => o is true ? "x" : null
+                        : null
+            };
         }
 
         public void Write(IEnumerable<IEnumerable<object>> rows)
@@ -77,7 +107,7 @@ namespace BbGit.Tables
             PrintBorder(console, context, theme.Top);
             if (theme.PrintHeader && context.HasHeaders)
             {
-                PrintHeaderRow(console, context, theme, theme.HeaderRow);
+                PrintHeaderRow(context, theme, theme.HeaderRow);
                 PrintBorder(console, context, theme.HeaderSeparator);
             }
             
@@ -85,7 +115,7 @@ namespace BbGit.Tables
             foreach (var row in context.Rows)
             {
                 rowCounter++;
-                PrintDataRow(console, context, theme, theme.Rows, row);
+                PrintDataRow(context, theme, theme.Rows, row);
 
                 if (rowCounter != context.Rows.Count)
                 {
@@ -103,7 +133,7 @@ namespace BbGit.Tables
             }
         }
 
-        private static void PrintHeaderRow(IConsole console, Context context, TableTheme theme, TableTheme.Level level)
+        private void PrintHeaderRow(Context context, TableTheme theme, TableTheme.Level level)
         {
             var row = context.Columns
                 .Select(c => new { column = c, lines = theme.Multiline 
@@ -113,12 +143,11 @@ namespace BbGit.Tables
                 .ToArray();
             var maxLines = row.Max(h => h.lines.Length);
 
-            PrintRow(console, context, level, row, maxLines, 
+            PrintRow(context, level, row, maxLines, 
                 (header, lineIndex) => header.lines.GetLineValue(lineIndex));
         }
 
-        private static void PrintDataRow(IConsole console, Context context, 
-            TableTheme theme, TableTheme.Level level, Cell[] row)
+        private void PrintDataRow(Context context, TableTheme theme, TableTheme.Level level, Cell[] row)
         {
             int maxLines = 1;
             foreach (var cell in row)
@@ -127,15 +156,15 @@ namespace BbGit.Tables
                 maxLines = Math.Max(maxLines, cell.MultiLine?.Length ?? 1);
             }
 
-            PrintRow(console, context, level, row, maxLines, 
+            PrintRow(context, level, row, maxLines, 
                 (cell, lineIndex) => cell.GetLineValue(lineIndex));
         }
 
-        private static void PrintRow<T>(
-            IConsole console, Context context, TableTheme.Level level,
+        private void PrintRow<T>(Context context, TableTheme.Level level,
             T[] row, int maxLines, Func<T, int, string> getLineValue)
         {
-            // TODO: markdown doesnt support multi-line cells
+            cancellationToken.ThrowIfCancellationRequested();
+            // TODO: markdown does not support multi-line cells
             for (int l = 0; l < maxLines; l++)
             {
                 console.Write(level.Left);
@@ -189,43 +218,54 @@ namespace BbGit.Tables
         private static void AdjustColumnWidths(Context context)
         {
             var overage = context.RequiredConsoleWidth - context.ConsoleWidth;
+            Console.Out.WriteLine($"required:{context.RequiredConsoleWidth} have:{context.ConsoleWidth} overage:{overage}");
             if (overage < 1)
             {
                 return;
             }
 
-            var wrappableColumns = context.Columns.Where(c => c.Column.WrapText);
+            var wrappableColumns = context.Columns
+                .Where(c => c.Column.WrapText && c.PrintWidth > 6)
+                .OrderBy(c => c.PrintWidth);
+
             var wrappableColumnsCount = wrappableColumns.Count();
             if (wrappableColumnsCount == 0)
             {
+                Console.Out.WriteLine("no wrappable columns");
                 return;
             }
 
+            var availableWidth = wrappableColumns.Sum(c => c.PrintWidth);
+            var percentToReduce = (double)overage / (double)availableWidth;
+            Console.Out.WriteLine($"availableWidth:{availableWidth} overage:{overage} ratio:{percentToReduce}%");
+            if (availableWidth < overage)
+            {
+                wrappableColumns.ForEach(c => c.PrintWidth = Math.Min(10, c.PrintWidth));
+                return;
+            }
+
+
             // TODO: be smarter about how and when to wrap each column
             // TODO: repeat for to free columns that fit within the new width
-            var wrappableWidth = overage / wrappableColumnsCount;
-
-            var free = wrappableColumns
-                .Where(c => c.PrintWidth <= wrappableWidth)
-                .Sum(c => wrappableWidth - c.PrintWidth);
-
-            wrappableColumns = wrappableColumns
-                .Where(c => c.PrintWidth > wrappableWidth);
-            wrappableColumnsCount = wrappableColumns.Count();
-            wrappableWidth = wrappableWidth + (free / wrappableColumnsCount);
-
-            wrappableColumns.ForEach(c => c.PrintWidth = wrappableWidth);
+            wrappableColumns.ForEach(c =>
+            {
+                var printWidth = percentToReduce * c.PrintWidth;
+                Console.Out.WriteLine($"{percentToReduce}% > {printWidth} {c}");
+                c.PrintWidth = (int)Math.Floor(printWidth);
+                Console.Out.WriteLine($"{c}");
+            });
         }
 
-        private static void AnalyzeColumnData(Context context)
+        private void AnalyzeColumnData(Context context)
         {
             foreach (var row in context.Rows)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 for (int i = 0; i < row.Length; i++)
                 {
                     var columnInfo = context.Columns[i];
                     var cell = row[i];
-                    columnInfo.Type ??= cell?.GetType();
+                    columnInfo.Type ??= cell?.Value.GetType();
 
                     if (columnInfo.Column.DisplayAs is not null)
                     {
@@ -243,9 +283,9 @@ namespace BbGit.Tables
                     Math.Max(column.Column.Name.Length, column.MaxLineWidth));
             }
 
-            context.RequiredConsoleWidth = context.Columns.Sum(c => c.PrintWidth) + 
-                                            context.Table.Theme.Width(context.Columns.Length) +
-                                            (context.Columns.Length-1);
+            context.RequiredConsoleWidth = context.Columns.Sum(c => c.PrintWidth) +
+                                           context.Table.Theme.Width(context.Columns.Length) +
+                                           (context.Columns.Length - 1);
         }
 
         private class Context
@@ -342,7 +382,9 @@ namespace BbGit.Tables
             public override string ToString()
             {
                 return
-                    $"{Column.Name} {nameof(Column.MaxWidth)}={Type} {nameof(Column.MaxWidth)}={Column.MaxWidth} {nameof(PrintWidth)}={PrintWidth} {nameof(MaxLineWidth)}={MaxLineWidth}";
+                    $"{Column.Name} ({Type}) {nameof(Column.MinWidth)}={Column.MinWidth} " +
+                    $"{nameof(Column.MaxWidth)}={Column.MaxWidth} {nameof(PrintWidth)}={PrintWidth} " +
+                    $"{nameof(MaxLineWidth)}={MaxLineWidth}";
             }
         }
     }
