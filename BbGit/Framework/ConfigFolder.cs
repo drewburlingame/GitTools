@@ -6,6 +6,8 @@ namespace BbGit.Framework
 {
     public class ConfigFolder
     {
+        private readonly ConfigFolder? parentConfigFolder;
+        public bool Exists { get; }
         public string FolderPath { get; }
 
         public static ConfigFolder UserFolder()
@@ -19,7 +21,7 @@ namespace BbGit.Framework
             return new ConfigFolder(Environment.CurrentDirectory);
         }
 
-        public ConfigFolder(string root)
+        private ConfigFolder(string root)
         {
             if (!Directory.Exists(root))
             {
@@ -27,14 +29,23 @@ namespace BbGit.Framework
             }
             
             FolderPath = Path.Combine(root, ".bbgit");
-            EnsureDirectoryExists(FolderPath);
+            Exists = Directory.Exists(FolderPath);
+        }
+
+        private ConfigFolder(ConfigFolder parentConfigFolder, string directoryName)
+        {
+            this.parentConfigFolder = parentConfigFolder;
+
+            FolderPath = Path.Combine(parentConfigFolder.FolderPath,directoryName);
+            Exists = parentConfigFolder.Exists && Directory.Exists(FolderPath);
         }
 
         public ConfigFolder ChildDirectory(string directoryName)
-            => new (Path.Combine(FolderPath, directoryName));
+            => new (this, directoryName);
 
         public string SaveConfig(string filename, string contents)
         {
+            EnsureDirectoryExists();
             var filePath = this.BuildFilePath(filename);
             File.WriteAllText(filePath, contents);
             return filePath;
@@ -43,7 +54,7 @@ namespace BbGit.Framework
         public string GetConfig(string filename)
         {
             var filePath = this.BuildFilePath(filename);
-            return File.Exists(filePath) 
+            return Exists && File.Exists(filePath) 
                 ? File.ReadAllText(filePath) 
                 : null;
         }
@@ -71,16 +82,16 @@ namespace BbGit.Framework
 
         public void ClearAll()
         {
+            if (!Exists) return;
             Directory.Delete(this.FolderPath, true);
         }
 
-        private void EnsureDirectoryExists(string bbGitPath)
+        private void EnsureDirectoryExists()
         {
-            if (!Directory.Exists(bbGitPath))
-            {
-                var directory = Directory.CreateDirectory(bbGitPath);
-                directory.Attributes = FileAttributes.Directory | FileAttributes.Hidden;
-            }
+            if (Exists) return;
+            parentConfigFolder?.EnsureDirectoryExists();
+            var directory = Directory.CreateDirectory(FolderPath);
+            directory.Attributes = FileAttributes.Directory | FileAttributes.Hidden;
         }
 
         private string BuildFilePath(string filename)
