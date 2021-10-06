@@ -10,7 +10,7 @@ namespace BbGit.Git
     {
         private static readonly string[] MainBranchNames = {"master", "develop"};
 
-    private bool isDisposing;
+        private bool isDisposing;
         public string FullPath { get; }
         public string Name { get; }
         public bool Exists { get; private set; }
@@ -18,6 +18,8 @@ namespace BbGit.Git
         public Repository GitRepo { get; private set; }
 
         public string CurrentBranchName => this.GitRepo.Head.FriendlyName;
+
+        public bool IsAMainBranch => MainBranchNames.Contains(CurrentBranchName);
 
         public bool IsInLocalBranch => !CurrentBranchName.IsIn(MainBranchNames);
 

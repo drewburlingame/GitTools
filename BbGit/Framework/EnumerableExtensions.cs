@@ -48,11 +48,8 @@ namespace BbGit.Framework
                 return value is not null && regex.IsMatch(value);
             });
 
-        public static DisposableCollection<T> ToDisposableCollection<T>(this IEnumerable<T> items) where T : IDisposable
-        {
-            var collection = items as ICollection<T> ?? items.ToList();
-            return new DisposableCollection<T>(collection);
-        }
+        public static DisposableCollection<T> ToDisposableCollection<T>(this IEnumerable<T> items) where T : IDisposable 
+            => new DisposableCollection<T>(items.ToCollection());
 
         public static async Task<IEnumerable<T1>> SelectManyAsync<T, T1>(this IEnumerable<T> enumeration, Func<T, Task<IEnumerable<T1>>> func)
         {

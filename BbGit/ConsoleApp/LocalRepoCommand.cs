@@ -6,10 +6,12 @@ using System.Threading;
 using BbGit.Framework;
 using BbGit.Git;
 using BbGit.Tables;
+using CliWrap;
 using CommandDotNet;
 using CommandDotNet.Prompts;
 using CommandDotNet.Rendering;
 using static MoreLinq.Extensions.ForEachExtension;
+using Command = CliWrap.Command;
 
 namespace BbGit.ConsoleApp
 {
@@ -32,8 +34,10 @@ namespace BbGit.ConsoleApp
             ProjOrRepoKeys projOrRepoKeys,
             [Option(ShortName = "n", Description = "regex to match name")]
             string namePattern,
-            [Option(Description = "output only keys")]
-            bool keys,
+            [Option(Description = "output only repo names")]
+            bool names,
+            [Option(Description = "output only project keys")]
+            bool projKeys,
             [Option(LongName = "branch", Description = "return only with the branch name")]
             string branchPattern,
             [Option(ShortName = "l", Description = "where local branch is checked out")]
@@ -45,16 +49,19 @@ namespace BbGit.ConsoleApp
             [Option(ShortName = "s", Description = "with stashes")]
             bool withLocalStashes,
             [Option(ShortName = "o", Description = "treat options:b,w,s as `OR` instead of `AND`")]
-            bool orLocalChecks)
+            bool orLocalChecks,
+            [Option(ShortName = "d", Description = "has no remote repo")]
+            bool noRemote,
+            [Option(Description = "inverts the filter")]
+            bool not)
         {
-            using var localRepos = this.gitService.GetLocalRepos(
-                projOrRepoKeys.GetProjKeysOrNull()?.ToCollection(),
-                projOrRepoKeys.GetRepoKeysOrNull()?.ToCollection());
-            
+            using var localRepos = this.gitService.GetLocalRepos(projOrRepoKeys);
+
             var repos = localRepos.AsEnumerable();
             
             repos = repos.WhereMatches(r => r.Name, namePattern)
                 .WhereMatches(r => r.CurrentBranchName, branchPattern)
+                .WhereIf(noRemote, r => r.RemoteRepo is null)
                 .WhereIf(isInLocalBranch, r => r.IsInLocalBranch);
 
             if (withLocalBranches || withLocalChanges || withLocalStashes)
@@ -72,10 +79,25 @@ namespace BbGit.ConsoleApp
                     );
             }
 
-            if (keys)
+            if (not)
+            {
+                var reposToHide = repos.Select(r => r.Name).ToHashSet();
+                repos = localRepos.Where(r => !reposToHide.Contains(r.Name));
+            }
+
+            if (names || Console.IsOutputRedirected)
             {
                 repos
                     .Select(r => r.Name)
+                    .ForEach(console.WriteLine);
+            }
+            else if (projKeys)
+            {
+                repos
+                    .Select(r => r.RemoteRepo?.ProjectKey)
+                    .Where(k => k is not null)
+                    .Distinct()
+                    .OrderBy(k => k)
                     .ForEach(console.WriteLine);
             }
             else
@@ -86,16 +108,14 @@ namespace BbGit.ConsoleApp
 
         [Command(Description = "Pull all repositories in the parent directory.  " +
                                "Piped input can be used to target specific repositories.")]
-        public void PullAll(
+        public void Pull(
             IConsole console, CancellationToken cancellationToken,
             ProjOrRepoKeys projOrRepoKeys,
             [Option] bool prune,
             [Option] bool dryrun,
-            [Option] string branch = "develop")
+            [Option] string branch)
         {
-            using var repositories = this.gitService.GetLocalRepos(
-                projOrRepoKeys.GetProjKeysOrNull()?.ToCollection(),
-                projOrRepoKeys.GetRepoKeysOrNull()?.ToCollection());
+            using var repositories = this.gitService.GetLocalRepos(projOrRepoKeys);
 
             if (dryrun)
             {
@@ -114,15 +134,62 @@ namespace BbGit.ConsoleApp
         }
 
         [Command]
+        public void SetOriginToHttp(IConsole console, CancellationToken cancellationToken, ProjOrRepoKeys projOrRepoKeys)
+        {
+            using var repositories = this.gitService.GetLocalRepos(projOrRepoKeys);
+            repositories
+                .Where(r => r.RemoteRepo is not null)
+                .SafelyForEach(r => r.SetOriginToHttp(),
+                cancellationToken,
+                summarizeErrors: true);
+        }
+
+        [Command]
+        public void SetOriginToSsh(IConsole console, CancellationToken cancellationToken, ProjOrRepoKeys projOrRepoKeys)
+        {
+            using var repositories = this.gitService.GetLocalRepos(projOrRepoKeys);
+            repositories
+                .Where(r => r.RemoteRepo is not null)
+                .SafelyForEach(r => r.SetOriginToSsh(),
+                cancellationToken,
+                summarizeErrors: true);
+        }
+
+        [Command(
+            Description = "executes the command for each repository",
+            ArgumentSeparatorStrategy = ArgumentSeparatorStrategy.PassThru)]
+        public void Exec(CommandContext context,
+            IConsole console, CancellationToken cancellationToken,
+            ProjOrRepoKeys projOrRepoKeys)
+        {
+            var separatedArguments = context.ParseResult!.SeparatedArguments;
+            var program = separatedArguments.First();
+            var arguments = separatedArguments.Skip(1).ToCsv(" ");
+
+            using var repositories = this.gitService.GetLocalRepos(projOrRepoKeys);
+            repositories.SafelyForEach(
+                r =>
+                {
+                    Cli.Wrap(program)
+                        .WithArguments(arguments)
+                        .WithWorkingDirectory(r.FullPath)
+                        .WithStandardOutputPipe(PipeTarget.ToDelegate(console.WriteLine))
+                        .WithStandardErrorPipe(PipeTarget.ToDelegate(console.Error.WriteLine))
+                        .WithValidation(CommandResultValidation.None)
+                        .ExecuteAsync(cancellationToken).Task.Wait(cancellationToken);
+                },
+                cancellationToken,
+                summarizeErrors: true);
+        }
+
+        [Command]
         public void Delete(
             IConsole console, CancellationToken cancellationToken,
             IPrompter prompter,
             ProjOrRepoKeys projOrRepoKeys,
             [Option] bool dryrun)
         {
-            using var repositories = this.gitService.GetLocalRepos(
-                projOrRepoKeys.GetProjKeysOrNull()?.ToCollection(),
-                projOrRepoKeys.GetRepoKeysOrNull()?.ToCollection());
+            using var repositories = this.gitService.GetLocalRepos(projOrRepoKeys);
 
             IEnumerable<string> BuildWarning(LocalRepo r)
             {

@@ -7,7 +7,7 @@ namespace BbGit.Git
     {
         private readonly Repository repository;
         public string ProjectKey => Project.Key;
-        public string HttpsUrl => repository.Links.Clone.FirstOrDefault(c => c.Name == "http")?.Href;
+        public string HttpUrl => repository.Links.Clone.FirstOrDefault(c => c.Name == "http")?.Href;
         public string SshUrl => repository.Links.Clone.FirstOrDefault(c => c.Name == "ssh")?.Href;
 
         /// <summary>for serialization</summary>

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using BbGit.BitBucket;
+using BbGit.ConsoleApp;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;
 using CommandDotNet;
@@ -16,7 +17,7 @@ namespace BbGit.Git
     public class GitService
     {
 
-        private static readonly Regex CaptureProjectKeyFromHttpUrl = new("projects/(?<projectkey>.[A-Za-z0-9])");
+        private static readonly Regex CaptureProjectKeyFromHttpUrl = new("[projects|scm]/(?<projectkey>.[A-Za-z0-9])");
         private static readonly Regex CaptureProjectKeyFromSshUrl = new("ssh://.*/(?<projectkey>.[A-Za-z0-9])/");
 
         private readonly string currentDirectory = Directory.GetCurrentDirectory();
@@ -45,13 +46,13 @@ namespace BbGit.Git
             }
 
             console.WriteLine($"cloning  {remoteRepo.Name.ColorRepo()}");
-            console.WriteLine($"  from  {remoteRepo.HttpsUrl.ColorPath()}");
+            console.WriteLine($"  from  {remoteRepo.HttpUrl.ColorPath()}");
             console.WriteLine($"  to  {localRepo.FullPath.ColorPath()}");
 
             try
             {
                 Repository.Clone(
-                    remoteRepo.HttpsUrl,
+                    remoteRepo.HttpUrl,
                     localRepo.FullPath,
                     new CloneOptions
                     {
@@ -63,7 +64,7 @@ namespace BbGit.Git
             }
             catch (Exception e)
             {
-                e.Data.Add("remote", $"name:{remoteRepo.Name} http:{remoteRepo.HttpsUrl}");
+                e.Data.Add("remote", $"name:{remoteRepo.Name} http:{remoteRepo.HttpUrl}");
                 e.Data.Add("local", $"name:{localRepo.Name} path:{localRepo.FullPath}");
                 throw;
             }
@@ -78,20 +79,24 @@ namespace BbGit.Git
             localRepo.SetGitRepo();
         }
 
-        public void PullLatest(LocalRepo localRepo, bool prune, string branchName = "master")
+        public void PullLatest(LocalRepo localRepo, bool prune, string branchName)
         {
-            if (!localRepo.GitRepo.Head.FriendlyName.Equals(branchName))
+            var currentBranchName = localRepo.CurrentBranchName;
+
+            bool canPrune = branchName?.Equals(currentBranchName) ?? localRepo.IsAMainBranch;
+
+            if (!canPrune)
             {
                 console.WriteLine($"Skipping pull for {localRepo.Name.ColorRepo()}. " +
-                                  $"Expected branch {branchName.ColorBranch()} " +
-                                  $"but was {localRepo.GitRepo.Head.FriendlyName.ColorBranch()}".ColorError());
+                                  $"Expected branch {branchName?.ColorBranch() ?? "master or develop".ColorBranch()} " +
+                                  $"but was {currentBranchName.ColorBranch()}".ColorError());
 
                 return;
             }
 
             // TODO: git stash > co target-branch > pull > co orig-branch > git stash pop
 
-            console.WriteLine($"pulling { (prune ? "and pruning " : null)} branch {branchName.ColorBranch()} for {localRepo.Name.ColorRepo()}".ColorDefault());
+            console.WriteLine($"pulling { (prune ? "and pruning " : null)} branch {currentBranchName.ColorBranch()} for {localRepo.Name.ColorRepo()}".ColorDefault());
 
             using (localRepo.ToggleHttpsUrl())
             {
@@ -137,6 +142,11 @@ namespace BbGit.Git
             }
         }
 
+        public DisposableCollection<LocalRepo> GetLocalRepos(ProjOrRepoKeys projOrRepoKeys)
+            => GetLocalRepos(
+                projOrRepoKeys.GetProjKeysOrNull()?.ToCollection(),
+                projOrRepoKeys.GetRepoKeysOrNull()?.ToCollection());
+
         public DisposableCollection<LocalRepo> GetLocalRepos(ICollection<string> onlyProjKeys = null, ICollection<string> onlyRepoNames = null)
         {
             var directories = GetLocalDirectoryPaths();
@@ -150,9 +160,11 @@ namespace BbGit.Git
             RemoteRepo GetRemote(LocalRepo local)
             {
                 var originUrl = local.GetOrigin().Url;
-                var match = originUrl.StartsWith("ssh") 
-                    ? CaptureProjectKeyFromSshUrl.Match(originUrl) 
-                    : CaptureProjectKeyFromHttpUrl.Match(originUrl);
+                Match match;
+                if (originUrl.StartsWith("ssh"))
+                    match = CaptureProjectKeyFromSshUrl.Match(originUrl);
+                else
+                    match = CaptureProjectKeyFromHttpUrl.Match(originUrl);
 
                 if (match.Success)
                 {
@@ -166,9 +178,9 @@ namespace BbGit.Git
             }
 
             return directories
-                .Where(d => onlyRepoNames?.Contains(d.Name, StringComparer.OrdinalIgnoreCase) ?? true)
-                .Select(d => new LocalRepo(d.FullName, GetRemote))
-                .Where(r => onlyProjKeys is null || r.RemoteRepo is not null && onlyProjKeys.Contains(r.RemoteRepo.ProjectKey))
+                .WhereIf(onlyRepoNames is not null, d => onlyRepoNames!.Contains(d.Name, StringComparer.OrdinalIgnoreCase))
+                .Select(d => new LocalRepo(d.FullName, GetRemote)) 
+                .WhereIf(onlyProjKeys is not null, r => r.RemoteRepo is not null && onlyProjKeys!.Contains(r.RemoteRepo.ProjectKey))
                 .Where(r => r.IsGitDir)
                 .OrderBy(r => r.Name)
                 .ToDisposableCollection();

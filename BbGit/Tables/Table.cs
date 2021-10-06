@@ -218,7 +218,6 @@ namespace BbGit.Tables
         private static void AdjustColumnWidths(Context context)
         {
             var overage = context.RequiredConsoleWidth - context.ConsoleWidth;
-            Console.Out.WriteLine($"required:{context.RequiredConsoleWidth} have:{context.ConsoleWidth} overage:{overage}");
             if (overage < 1)
             {
                 return;
@@ -231,13 +230,11 @@ namespace BbGit.Tables
             var wrappableColumnsCount = wrappableColumns.Count();
             if (wrappableColumnsCount == 0)
             {
-                Console.Out.WriteLine("no wrappable columns");
                 return;
             }
 
             var availableWidth = wrappableColumns.Sum(c => c.PrintWidth);
             var percentToReduce = (double)overage / (double)availableWidth;
-            Console.Out.WriteLine($"availableWidth:{availableWidth} overage:{overage} ratio:{percentToReduce}%");
             if (availableWidth < overage)
             {
                 wrappableColumns.ForEach(c => c.PrintWidth = Math.Min(10, c.PrintWidth));
@@ -250,9 +247,7 @@ namespace BbGit.Tables
             wrappableColumns.ForEach(c =>
             {
                 var printWidth = percentToReduce * c.PrintWidth;
-                Console.Out.WriteLine($"{percentToReduce}% > {printWidth} {c}");
                 c.PrintWidth = (int)Math.Floor(printWidth);
-                Console.Out.WriteLine($"{c}");
             });
         }
 
@@ -265,7 +260,7 @@ namespace BbGit.Tables
                 {
                     var columnInfo = context.Columns[i];
                     var cell = row[i];
-                    columnInfo.Type ??= cell?.Value.GetType();
+                    columnInfo.Type ??= cell?.Value?.GetType();
 
                     if (columnInfo.Column.DisplayAs is not null)
                     {

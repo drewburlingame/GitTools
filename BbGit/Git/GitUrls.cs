@@ -27,7 +27,7 @@ namespace BbGit.Git
                 return new DisposableAction(null);
             }
             
-            var httpsUrl = localRepo.RemoteRepo?.HttpsUrl;
+            var httpsUrl = localRepo.RemoteRepo?.HttpUrl;
             if (httpsUrl == null)
             {
                 throw new Exception($"remote repo not found for {localRepo.Name}");
@@ -39,6 +39,11 @@ namespace BbGit.Git
             SetOriginUrl(localRepo.GitRepo, httpsUrl, httpsUrl);
 
             return new DisposableAction(() => SetOriginUrl(localRepo.GitRepo, originalUrl, originalPushUrl));
+        }
+
+        public static void SetOriginToHttp(this LocalRepo localRepo)
+        {
+            SetOriginUrl(localRepo.GitRepo, localRepo.RemoteRepo.HttpUrl, localRepo.RemoteRepo.HttpUrl);
         }
 
         public static void SetOriginToSsh(this LocalRepo localRepo)

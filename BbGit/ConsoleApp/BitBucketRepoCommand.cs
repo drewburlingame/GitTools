@@ -191,13 +191,13 @@ namespace BbGit.ConsoleApp
         public void Clone(
             IConsole console, CancellationToken cancellationToken,
             [Operand] [Required] string[] repos,
-            [Option(LongName = "http", Description = "Leave the origin as http, otherwise it will be set to ssh")] 
-            bool setHttpOrigin = false)
+            [Option(LongName = "ssh", Description = "Set origin to ssh after completed")] 
+            bool setSshOrigin = false)
         {
             this.bbService.GetRepos()
                 .Where(r => repos.Contains(r.Name))
                 .SafelyForEach(
-                    r => this.gitService.CloneRepo(r, !setHttpOrigin), 
+                    r => this.gitService.CloneRepo(r, setSshOrigin), 
                     cancellationToken,
                     summarizeErrors: true);
         }

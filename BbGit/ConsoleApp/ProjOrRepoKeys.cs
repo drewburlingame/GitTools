@@ -6,20 +6,20 @@ namespace BbGit.ConsoleApp
 {
     public class ProjOrRepoKeys : IArgumentModel
     {
-        [Option(ShortName = "r", Description = "When specified, the keys-to-use arguments are considered repository names instead of project keys")]
-        public bool UseRepoKeys { get; set; }
+        [Option(ShortName = "p", Description = "When specified, the inputs are parsed as project keys instead of repository names")]
+        public bool UseProjKeys { get; set; }
 
         [Operand(
-            Name = "keys-to-use", 
-            Description = "the keys to use in the command. The keys are considered project keys unless -r is specified")]
-        public IEnumerable<string> KeysToUse { get; set; }
+            Name = "inputs", 
+            Description = "The repository names or project keys to use in the command. Assumes repository unless -p is specified")]
+        public IEnumerable<string> Inputs { get; set; }
 
-        public IEnumerable<string> GetProjKeysOrEmpty() => UseRepoKeys ? Enumerable.Empty<string>() : KeysToUse;
+        public IEnumerable<string> GetProjKeysOrEmpty() => UseProjKeys ? Inputs : Enumerable.Empty<string>();
 
-        public IEnumerable<string> GetProjKeysOrNull() => UseRepoKeys ? null : KeysToUse;
+        public IEnumerable<string> GetProjKeysOrNull() => UseProjKeys ? Inputs : null;
 
-        public IEnumerable<string> GetRepoKeysOrEmpty() => UseRepoKeys ? KeysToUse : Enumerable.Empty<string>();
+        public IEnumerable<string> GetRepoKeysOrEmpty() => !UseProjKeys ? Inputs : Enumerable.Empty<string>();
 
-        public IEnumerable<string> GetRepoKeysOrNull() => UseRepoKeys ? KeysToUse : null;
+        public IEnumerable<string> GetRepoKeysOrNull() => !UseProjKeys ? Inputs : null;
     }
 }
