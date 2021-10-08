@@ -10,7 +10,7 @@ namespace BbGit.Framework
         public bool Exists { get; }
         public string FolderPath { get; }
 
-        public static ConfigFolder UserFolder()
+        public static ConfigFolder UserProfile()
         {
             var userFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             return new ConfigFolder(userFolder);
@@ -20,6 +20,8 @@ namespace BbGit.Framework
         {
             return new ConfigFolder(Environment.CurrentDirectory);
         }
+
+        public ConfigFolder Subfolder(string name) => new(this, name);
 
         private ConfigFolder(string root)
         {
@@ -32,16 +34,13 @@ namespace BbGit.Framework
             Exists = Directory.Exists(FolderPath);
         }
 
-        private ConfigFolder(ConfigFolder parentConfigFolder, string directoryName)
+        private ConfigFolder(ConfigFolder parentConfigFolder, string name)
         {
             this.parentConfigFolder = parentConfigFolder;
 
-            FolderPath = Path.Combine(parentConfigFolder.FolderPath,directoryName);
+            FolderPath = Path.Combine(parentConfigFolder.FolderPath,name);
             Exists = parentConfigFolder.Exists && Directory.Exists(FolderPath);
         }
-
-        public ConfigFolder ChildDirectory(string directoryName)
-            => new (this, directoryName);
 
         public string SaveConfig(string filename, string contents)
         {
@@ -88,7 +87,8 @@ namespace BbGit.Framework
 
         private void EnsureDirectoryExists()
         {
-            if (Exists) return;
+            // extra check in case another ConfigFolder created the directory.
+            if (Exists || Directory.Exists(FolderPath)) return;
             parentConfigFolder?.EnsureDirectoryExists();
             var directory = Directory.CreateDirectory(FolderPath);
             directory.Attributes = FileAttributes.Directory | FileAttributes.Hidden;
