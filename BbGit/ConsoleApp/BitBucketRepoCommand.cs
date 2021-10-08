@@ -48,8 +48,8 @@ namespace BbGit.ConsoleApp
             string namePattern = null,
             [Option(ShortName = "d", Description = "regex to match description")]
             string descPattern = null,
-            [Option(Description = "output only keys")]
-            bool keys = false)
+            [Option(ShortName = "o", LongName=null, Description = "output only keys")]
+            bool outputKeys = false)
         {
             var projects = this.bbService
                 .GetProjects()
@@ -59,7 +59,7 @@ namespace BbGit.ConsoleApp
                 .OrderBy(p => p.Name)
                 .ToCollection();
 
-            if (keys)
+            if (outputKeys)
             {
                 projects
                     .Select(p => p.Key)
@@ -117,8 +117,8 @@ namespace BbGit.ConsoleApp
             string namePattern,
             [Option(ShortName = "d", Description = "regex to match description")]
             string descPattern,
-            [Option(Description = "output only keys")]
-            bool keys,
+            [Option(ShortName = "o", LongName=null, Description = "output only names")]
+            bool outputNames,
             [Option(ShortName = "c", Description = "return only cloned")]
             bool cloned,
             [Option(ShortName = "u", Description = "return only uncloned")]
@@ -161,7 +161,7 @@ namespace BbGit.ConsoleApp
             bool? isCloned = cloned ? true : uncloned ? false : null;
             var repoPairs = localRepos.PairRepos(remoteRepos, mustHaveRemote: true, isCloned).Values;
 
-            if (keys)
+            if (outputNames)
             {
                 repoPairs
                     .OrderBy(p => p.Remote.Description)

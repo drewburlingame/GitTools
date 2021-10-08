@@ -34,10 +34,10 @@ namespace BbGit.ConsoleApp
             ProjOrRepoKeys projOrRepoKeys,
             [Option(ShortName = "n", Description = "regex to match name")]
             string namePattern,
-            [Option(Description = "output only repo names")]
-            bool names,
-            [Option(Description = "output only project keys")]
-            bool projKeys,
+            [Option(ShortName = "o", LongName=null, Description = "output only repo names")]
+            bool outputNames,
+            [Option(LongName = "opk", Description = "output only project keys")]
+            bool outputProjectKeys,
             [Option(LongName = "branch", Description = "return only with the branch name")]
             string branchPattern,
             [Option(ShortName = "l", Description = "where local branch is checked out")]
@@ -48,7 +48,7 @@ namespace BbGit.ConsoleApp
             bool withLocalChanges,
             [Option(ShortName = "s", Description = "with stashes")]
             bool withLocalStashes,
-            [Option(ShortName = "o", Description = "treat options:b,w,s as `OR` instead of `AND`")]
+            [Option(ShortName = "r", Description = "treat options:b,w,s as `OR` instead of `AND`")]
             bool orLocalChecks,
             [Option(ShortName = "d", Description = "has no remote repo")]
             bool noRemote,
@@ -85,13 +85,13 @@ namespace BbGit.ConsoleApp
                 repos = localRepos.Where(r => !reposToHide.Contains(r.Name));
             }
 
-            if (names || Console.IsOutputRedirected)
+            if (outputNames || Console.IsOutputRedirected)
             {
                 repos
                     .Select(r => r.Name)
                     .ForEach(console.WriteLine);
             }
-            else if (projKeys)
+            else if (outputProjectKeys)
             {
                 repos
                     .Select(r => r.RemoteRepo?.ProjectKey)
