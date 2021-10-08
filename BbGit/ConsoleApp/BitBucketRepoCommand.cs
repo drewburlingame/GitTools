@@ -201,5 +201,23 @@ namespace BbGit.ConsoleApp
                     cancellationToken,
                     summarizeErrors: true);
         }
+
+        [Command(
+            Description = "executes the command for each repository",
+            ExtendedHelpText = RepositoryExecutor.RemoteRepoExtendedHelpText,
+            ArgumentSeparatorStrategy = ArgumentSeparatorStrategy.PassThru)]
+        public void Exec(CommandContext context,
+            IConsole console, CancellationToken cancellationToken,
+            [Operand][Required] string[] repos,
+            [Option(ShortName = "c", 
+                Description = "Use the current directory as the working directly, else the repository directory is used")] 
+            bool useCurrentDirectory)
+        {
+            var repositories = this.bbService.GetRepos()
+                .Where(r => repos.Contains(r.Name));
+
+            new RepositoryExecutor(context, console, cancellationToken, useCurrentDirectory)
+                .ExecuteFor(repositories);
+        }
     }
 }

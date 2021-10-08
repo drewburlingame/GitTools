@@ -97,6 +97,11 @@ namespace BbGit.Framework
                     action(r);
                     errorsInARow = 0;
                 }
+
+                catch (OperationCanceledException oce)
+                {
+                    throw;
+                }
                 catch (Exception e)
                 {
                     errorsInARow++;

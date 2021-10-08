@@ -6,12 +6,10 @@ using System.Threading;
 using BbGit.Framework;
 using BbGit.Git;
 using BbGit.Tables;
-using CliWrap;
 using CommandDotNet;
 using CommandDotNet.Prompts;
 using CommandDotNet.Rendering;
 using static MoreLinq.Extensions.ForEachExtension;
-using Command = CliWrap.Command;
 
 namespace BbGit.ConsoleApp
 {
@@ -133,53 +131,20 @@ namespace BbGit.ConsoleApp
             }
         }
 
-        [Command]
-        public void SetOriginToHttp(IConsole console, CancellationToken cancellationToken, ProjOrRepoKeys projOrRepoKeys)
-        {
-            using var repositories = this.gitService.GetLocalRepos(projOrRepoKeys);
-            repositories
-                .Where(r => r.RemoteRepo is not null)
-                .SafelyForEach(r => r.SetOriginToHttp(),
-                cancellationToken,
-                summarizeErrors: true);
-        }
-
-        [Command]
-        public void SetOriginToSsh(IConsole console, CancellationToken cancellationToken, ProjOrRepoKeys projOrRepoKeys)
-        {
-            using var repositories = this.gitService.GetLocalRepos(projOrRepoKeys);
-            repositories
-                .Where(r => r.RemoteRepo is not null)
-                .SafelyForEach(r => r.SetOriginToSsh(),
-                cancellationToken,
-                summarizeErrors: true);
-        }
-
         [Command(
             Description = "executes the command for each repository",
+            ExtendedHelpText = RepositoryExecutor.LocalRepoExtendedHelpText,
             ArgumentSeparatorStrategy = ArgumentSeparatorStrategy.PassThru)]
         public void Exec(CommandContext context,
             IConsole console, CancellationToken cancellationToken,
-            ProjOrRepoKeys projOrRepoKeys)
+            ProjOrRepoKeys projOrRepoKeys,
+            [Option(ShortName = "c",
+                Description =
+                    "Use the current directory as the working directly, else the repository directory is used")]
+            bool useCurrentDirectory)
         {
-            var separatedArguments = context.ParseResult!.SeparatedArguments;
-            var program = separatedArguments.First();
-            var arguments = separatedArguments.Skip(1).ToCsv(" ");
-
             using var repositories = this.gitService.GetLocalRepos(projOrRepoKeys);
-            repositories.SafelyForEach(
-                r =>
-                {
-                    Cli.Wrap(program)
-                        .WithArguments(arguments)
-                        .WithWorkingDirectory(r.FullPath)
-                        .WithStandardOutputPipe(PipeTarget.ToDelegate(console.WriteLine))
-                        .WithStandardErrorPipe(PipeTarget.ToDelegate(console.Error.WriteLine))
-                        .WithValidation(CommandResultValidation.None)
-                        .ExecuteAsync(cancellationToken).Task.Wait(cancellationToken);
-                },
-                cancellationToken,
-                summarizeErrors: true);
+            new RepositoryExecutor(context, console, cancellationToken, useCurrentDirectory).ExecuteFor(repositories);
         }
 
         [Command]
