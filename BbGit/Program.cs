@@ -8,6 +8,7 @@ using BbGit.Git;
 using Bitbucket.Net;
 using CommandDotNet;
 using CommandDotNet.DataAnnotations;
+using CommandDotNet.Diagnostics;
 using CommandDotNet.Execution;
 using CommandDotNet.IoC.Autofac;
 using CommandDotNet.NameCasing;
@@ -22,7 +23,10 @@ namespace BbGit
     {
         private static int Main(string[] args)
         {
-            AppDomain.CurrentDomain.UnhandledException += (sender, args) => ((Exception)args.ExceptionObject).Print();
+            Debugger.AttachIfDebugDirective(args);
+
+            AppDomain.CurrentDomain.UnhandledException += (sender, args) 
+                => ((Exception)args.ExceptionObject).Print();
 
             try
             {
@@ -34,6 +38,7 @@ namespace BbGit
                     .UseNameCasing(Case.KebabCase)
                     .UseDataAnnotationValidations(showHelpOnError: true)
                     .UseTimerDirective()
+                    .UseDefaultsFromAppSetting(configs.Settings, true)
                     .UseErrorHandler((ctx, ex) =>
                     {
                         ctx.Console.Error.WriteLine(ctx.ToString());
