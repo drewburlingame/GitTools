@@ -34,6 +34,7 @@ namespace BbGit
 
                 var appRunner = new AppRunner<GitApplication>()
                     .UseDefaultMiddleware(excludePrompting: true)
+                    .GiveCancellationTokenToFlurl()
                     .UsePrompting(promptForMissingArguments: false)
                     .UseNameCasing(Case.KebabCase)
                     .UseDataAnnotationValidations(showHelpOnError: true)
@@ -49,7 +50,7 @@ namespace BbGit
 
                 return appRunner.Run(args);
             }
-            catch (OperationCanceledException oce)
+            catch (OperationCanceledException)
             {
                 return 1;
             }
