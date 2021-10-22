@@ -4,3 +4,4 @@ AuthType = Basic,OAuth
 Username = {username}
 AppPassword = {password},{app token}
 DefaultAccount = {default account to use}
+CacheTTLInDays = 7

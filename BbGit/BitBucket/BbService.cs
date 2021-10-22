@@ -16,29 +16,33 @@ namespace BbGit.BitBucket
     {
         private readonly IConsole console;
         private readonly BitbucketClient bbServerClient;
-        private bool ignoreCache;
+        private readonly AppConfig appConfig;
+        private bool _ignoreCache;
 
-        public BbService(IConsole console, BitbucketClient bbServerClient)
+        public BbService(IConsole console, BitbucketClient bbServerClient, AppConfig appConfig)
         {
             this.console = console;
             this.bbServerClient = bbServerClient;
+            this.appConfig = appConfig;
         }
 
         public void RefreshCaches(
             bool ignoreCache, bool skipCacheRefresh, bool forceCacheRefresh, bool warnOnCacheRefresh)
         {
-            this.ignoreCache = ignoreCache;
+            _ignoreCache = ignoreCache;
 
-            if (!skipCacheRefresh && !ignoreCache)
+            if (!ignoreCache)
             {
                 // create if not exist because we'll definitely be populating them
                 var projectCache = ProjectCache.Get();
                 var repoCache = RepoCache.Get();
 
-                // TODO: setting for refreshInterval
-                var refreshInterval = TimeSpan.FromDays(1);
+                var refreshInterval = TimeSpan.FromDays(appConfig.CacheTTLInDays);
 
-                if (forceCacheRefresh || projectCache.CachedOn.Add(refreshInterval) < DateTime.Now)
+                bool RefreshCache(DateTime cachedOn) => 
+                    forceCacheRefresh || !skipCacheRefresh && cachedOn.Add(refreshInterval) < DateTime.Now;
+
+                if (RefreshCache(projectCache.CachedOn))
                 {
                     if (warnOnCacheRefresh)
                     {
@@ -57,7 +61,7 @@ namespace BbGit.BitBucket
                     }
                 }
 
-                if (forceCacheRefresh || repoCache.CachedOn.Add(refreshInterval) < DateTime.Now)
+                if (RefreshCache(repoCache.CachedOn))
                 {
                     if (warnOnCacheRefresh)
                     {
@@ -86,7 +90,7 @@ namespace BbGit.BitBucket
         
         public async Task<IEnumerable<RemoteProj>> GetProjectsAsync()
         {
-            var projects = ignoreCache 
+            var projects = _ignoreCache 
                 ? await GetProjectsRawAsync() 
                 : ProjectCache.Get().ProjectsByKey.Values;
 
@@ -118,7 +122,7 @@ namespace BbGit.BitBucket
         {
             IEnumerable<Repository> repositories;
 
-            if (ignoreCache)
+            if (_ignoreCache)
             {
                 repositories = await GetReposRawAsync(projectName);
             }
