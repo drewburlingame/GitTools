@@ -1,5 +1,6 @@
 ﻿using System;
 using BbGit.Framework;
+using Spectre.Console;
 
 namespace BbGit.Tables
 {
@@ -8,13 +9,20 @@ namespace BbGit.Tables
         public string Name { get; }
         public HAlign HAlign { get; set; }
         public bool WrapText { get; set; }
-        public int? MinWidth { get; set; }
-        public int? MaxWidth { get; set; }
         public Func<object?,string?>? DisplayAs { get; set; } 
 
         public Column(string name)
         {
             Name = name;
+        }
+
+        public TableColumn ToTableColumn()
+        {
+            return new TableColumn(Name)
+            {
+                Alignment = HAlign.ToString().ToEnum<Justify>(),
+                NoWrap = !WrapText
+            };
         }
     }
 }

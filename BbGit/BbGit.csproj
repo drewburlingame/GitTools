@@ -26,6 +26,7 @@
     <PackageReference Include="morelinq" Version="3.3.2" />
     <PackageReference Include="Pastel" Version="2.1.0" />
     <PackageReference Include="sharpconfig" Version="3.2.9.1" />
+    <PackageReference Include="Spectre.Console" Version="0.42.0" />
   </ItemGroup>
 
 </Project>

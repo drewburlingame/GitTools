@@ -15,6 +15,7 @@ using CommandDotNet.NameCasing;
 using CommandDotNet.Rendering;
 using LibGit2Sharp;
 using LibGit2Sharp.Handlers;
+using Spectre.Console;
 using MiddlewareSteps = CommandDotNet.Execution.MiddlewareSteps;
 
 namespace BbGit
@@ -35,7 +36,7 @@ namespace BbGit
                 var appRunner = new AppRunner<GitApplication>()
                     .UseDefaultMiddleware(excludePrompting: true)
                     .GiveCancellationTokenToFlurl()
-                    .UsePrompting(promptForMissingArguments: false)
+                    .Configure(c => c.UseParameterResolver(ctx => AnsiConsole.Console))
                     .UseNameCasing(Case.KebabCase)
                     .UseDataAnnotationValidations(showHelpOnError: true)
                     .UseTimerDirective()

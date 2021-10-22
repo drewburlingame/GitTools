@@ -5,11 +5,11 @@ using System.Linq;
 using System.Threading;
 using BbGit.Framework;
 using BbGit.Git;
-using BbGit.Tables;
 using CommandDotNet;
-using CommandDotNet.Prompts;
 using CommandDotNet.Rendering;
 using static MoreLinq.Extensions.ForEachExtension;
+using Spectre.Console;
+using Table=BbGit.Tables.Table;
 
 namespace BbGit.ConsoleApp
 {
@@ -27,7 +27,7 @@ namespace BbGit.ConsoleApp
 
         [Command(Description = "List local repositories matching the search criteria")]
         public void Repo(
-            IConsole console, CancellationToken cancellationToken,
+            IAnsiConsole console, CancellationToken cancellationToken,
             TableFormatModel tableFormatModel,
             ProjOrRepoKeys projOrRepoKeys,
             [Option(ShortName = "n", Description = "regex to match name")]
@@ -100,14 +100,14 @@ namespace BbGit.ConsoleApp
             }
             else
             {
-                PrintReposTable(console, cancellationToken, repos, tableFormatModel.GetTheme());
+                PrintReposTable(console, repos, tableFormatModel.GetTheme());
             }
         }
 
         [Command(Description = "Pull all repositories in the parent directory.  " +
                                "Piped input can be used to target specific repositories.")]
         public void Pull(
-            IConsole console, CancellationToken cancellationToken,
+            IAnsiConsole console, CancellationToken cancellationToken,
             ProjOrRepoKeys projOrRepoKeys,
             [Option] bool prune,
             [Option] bool dryrun,
@@ -120,7 +120,7 @@ namespace BbGit.ConsoleApp
                 console.WriteLine();
                 console.WriteLine("dryrun: the following repositories would be pulled");
                 var records = repositories.OrderBy(r => r.Name);
-                PrintReposTable(console, cancellationToken, records, TableTheme.ColumnLines);
+                PrintReposTable(AnsiConsole.Console, records);
             }
             else
             {
@@ -149,8 +149,7 @@ namespace BbGit.ConsoleApp
 
         [Command]
         public void Delete(
-            IConsole console, CancellationToken cancellationToken,
-            IPrompter prompter,
+            IAnsiConsole console, CancellationToken cancellationToken,
             ProjOrRepoKeys projOrRepoKeys,
             [Option] bool dryrun)
         {
@@ -177,7 +176,7 @@ namespace BbGit.ConsoleApp
                 console.WriteLine();
                 console.WriteLine("dryrun: the following repositories would be deleted");
                 var records = repositories.OrderBy(r => r.Name);
-                PrintReposTable(console, cancellationToken, records, TableTheme.ColumnLines);
+                PrintReposTable(console, records);
             }
             else
             {
@@ -187,11 +186,7 @@ namespace BbGit.ConsoleApp
                         var warning = BuildWarning(r).ToCsv();
                         if (!warning.IsNullOrEmpty())
                         {
-                            var answer = prompter.PromptForValue(
-                                $"{r.Name} has {warning}. Would you still like to delete? y or n",
-                                out var isCancellationRequested);
-
-                            if (!answer.ToLower().IsIn("y","yes"))
+                            if (!console.Confirm($"{r.Name} has {warning}. Would you still like to delete?"))
                             {
                                 console.WriteLine($"skipping {r.Name}");
                                 return;
@@ -215,7 +210,7 @@ namespace BbGit.ConsoleApp
             }
         }
 
-        private static void PrintReposTable(IConsole console, CancellationToken cancellationToken, IEnumerable<LocalRepo> repos, TableTheme tableTheme = null)
+        private static void PrintReposTable(IAnsiConsole console, IEnumerable<LocalRepo> repos, TableBorder tableBorder = null)
         {
             var records = repos.Select(l => new
             {
@@ -226,7 +221,7 @@ namespace BbGit.ConsoleApp
                 stashes = l.StashCount,
                 branch = l.CurrentBranchName + (l.IsInLocalBranch ? " * " : "")
             });
-            new Table(console, tableTheme, includeCount: true, cancellationToken)
+            new Table(console, tableBorder, includeCount: true)
                 {
                     HideZeros = true
                 }

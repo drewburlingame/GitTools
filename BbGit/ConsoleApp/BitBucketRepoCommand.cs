@@ -7,10 +7,11 @@ using System.Threading.Tasks;
 using BbGit.BitBucket;
 using BbGit.Framework;
 using BbGit.Git;
-using BbGit.Tables;
 using CommandDotNet;
 using CommandDotNet.Rendering;
 using static MoreLinq.Extensions.ForEachExtension;
+using Spectre.Console;
+using Table = BbGit.Tables.Table;
 
 namespace BbGit.ConsoleApp
 {
@@ -40,7 +41,7 @@ namespace BbGit.ConsoleApp
             Description = "List projects from the server",
             ExtendedHelpText =
                 "for regex flags, see https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-options")]
-        public int Proj(IConsole console, CancellationToken cancellationToken,
+        public int Proj(IAnsiConsole console, CancellationToken cancellationToken,
             TableFormatModel tableFormatModel,
             [Option(ShortName = "k", Description = "regex to match key")]
             string keyPattern = null,
@@ -93,14 +94,10 @@ namespace BbGit.ConsoleApp
                         Cloned = remoteRepoCounts.GetValueOrDefault(p.Key)?.local ?? 0
                     });
 
-                new Table(console, tableFormatModel?.GetTheme(), includeCount: true, cancellationToken)
-                    .OverrideColumn(records, r => r.Key, c => c.WrapText = false)
-                    .OverrideColumn(records, r => r.Name, c => c.WrapText = false)
-                    .OverrideColumn(records, r => r.Type, c => c.WrapText = false)
+                new Table(console, tableFormatModel?.GetTheme(), includeCount: true)
                     .OverrideColumn(records, r => r.Description, c =>
                     {
                         c.WrapText = true;
-                        c.MaxWidth = 70;
                     })
                     .Write(records);
             }
@@ -110,7 +107,7 @@ namespace BbGit.ConsoleApp
 
         [Command(Description = "show the repos for the given projects")]
         public void Repo(
-            IConsole console, CancellationToken cancellationToken, 
+            IAnsiConsole console, CancellationToken cancellationToken, 
             TableFormatModel tableFormatModel,
             ProjOrRepoKeys projOrRepoKeys,
             [Option(ShortName = "n", Description = "regex to match name")]
@@ -180,9 +177,7 @@ namespace BbGit.ConsoleApp
                         p.Remote.Public,
                         p.Remote.StatusMessage
                     });
-                new Table(console, tableFormatModel?.GetTheme(), includeCount: true, cancellationToken)
-                    .OverrideColumn(rows, c => c.ProjectKey, c => c.WrapText = false)
-                    .OverrideColumn(rows, c => c.Name, c => c.WrapText = false)
+                new Table(console, tableFormatModel?.GetTheme(), includeCount: true)
                     .Write(rows);
             }
         }
