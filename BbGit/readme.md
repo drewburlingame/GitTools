@@ -33,7 +33,8 @@ This is not an exhaustive list, and I'll probably forget to add some as more are
 These stand out has having made the big differences for me.
 
 [CommandDotNet](https://github.com/bilal-fazlani/commanddotnet) Bilal Fazlani created a great framework for creating console apps with multiple commands.  This is now my favorite console framework.
-Edit: I'm now one of the maintainers of this framework.
+
+- Edit: I'm now one of the maintainers of CommandDotNet.
 
 [Pastel](https://github.com/silkfire/Pastel) A library for coloring console output.
 
