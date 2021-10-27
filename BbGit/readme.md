@@ -17,12 +17,6 @@ Follow [this guide](https://confluence.atlassian.com/bitbucket/app-passwords-828
 
 After building/downloading bbgit, add the .exe to your path for easy use anywhere.
 
-## Configuring existing repositories
-BbGit stores configs and caches within each repository directory, within a .bbgit folder.  Add this to your .gitignore file
-Use the `BbGit repo-config update-all-configs` command to update existing repositories
-
-Use `BbGit config-repo local-configs-clear` from the root folder to remove the folders from all repos
-
 # Usage
 Type `-h` with any command and sub-command to see the options available.
 
@@ -36,16 +30,15 @@ Most of the commands accept piped-input so you can filter repositories using the
 The following are some of the open source projects that have made it creating this application significantly easier.
 This is not an exhaustive list, and I'll probably forget to add some as more are brought in.  
 
-see [paket.dependecies] (paket.dependencies) for the complete list.
-
 These stand out has having made the big differences for me.
 
-[CommandDotNet] (https://github.com/bilal-fazlani/commanddotnet) Bilal Fazlani created a great framework for creating console apps with multiple commands.  This is now my favorite console framework.
+[CommandDotNet](https://github.com/bilal-fazlani/commanddotnet) Bilal Fazlani created a great framework for creating console apps with multiple commands.  This is now my favorite console framework.
+Edit: I'm now one of the maintainers of this framework.
 
-[Colorful.Console] (https://github.com/tomakita/Colorful.Console) Tom Akita created a handy library for formatting console output, making it so much easier to grok the output.
+[Pastel](https://github.com/silkfire/Pastel) A library for coloring console output.
 
-[LibGit2Sharp] (https://github.com/libgit2/libgit2sharp) The most complete library for interacting with git.
+[Spectre Console](https://github.com/spectreconsole/spectre.console) A great library for prompting and structuring console output.
 
-[Paket] (https://github.com/fsprojects/Paket) sane dependency management
+[LibGit2Sharp](https://github.com/libgit2/libgit2sharp) The most complete .Net library for interacting with git.
 
-[SharpBucket] (https://github.com/MitjaBezensek/SharpBucket/) Mitja Bezenšek created a great library for interacting with the BitBucket api
+[Bitbucket.Net] (https://github.com/lvermeulen/Bitbucket.Net) A good library for access to BitBucket.
