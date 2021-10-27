@@ -41,4 +41,4 @@ Edit: I'm now one of the maintainers of this framework.
 
 [LibGit2Sharp](https://github.com/libgit2/libgit2sharp) The most complete .Net library for interacting with git.
 
-[Bitbucket.Net] (https://github.com/lvermeulen/Bitbucket.Net) A good library for access to BitBucket.
+[Bitbucket.Net](https://github.com/lvermeulen/Bitbucket.Net) A good library for access to BitBucket.
