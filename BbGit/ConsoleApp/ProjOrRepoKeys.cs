@@ -16,4 +16,9 @@ namespace BbGit.ConsoleApp
 
         public IEnumerable<string>? GetRepoKeysOrNull() => !UseProjKeys ? Inputs : null;
     }
+
+    public class DryRunArgs : IArgumentModel
+    {
+        [Option("dryrun")] public bool Dryrun { get; set; } = false;
+    }
 }

@@ -15,11 +15,11 @@ namespace BbGit.ConsoleApp
     [Command("local", Description = "manage local BitBucket repositories")]
     public class LocalRepoCommand
     {
-        private readonly GitService gitService;
-
+        private readonly GitService _gitService;
+        
         public LocalRepoCommand(GitService gitService)
         {
-            this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
+            _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
         }
 
         [Command(Description = "List local repositories matching the search criteria")]
@@ -50,7 +50,7 @@ namespace BbGit.ConsoleApp
             [Option(Description = "inverts the filter")]
             bool not = false)
         {
-            using var localRepos = this.gitService.GetLocalRepos(projOrRepoKeys);
+            using var localRepos = _gitService.GetLocalRepos(projOrRepoKeys);
 
             var repos = localRepos.AsEnumerable();
             
@@ -106,13 +106,13 @@ namespace BbGit.ConsoleApp
         public void Pull(
             IAnsiConsole console, CancellationToken cancellationToken,
             ProjOrRepoKeys projOrRepoKeys,
+            DryRunArgs dryRunArgs,
             [Option] string? branch,
-            [Option] bool prune = false,
-            [Option] bool dryrun = false)
+            [Option] bool prune = false)
         {
-            using var repositories = this.gitService.GetLocalRepos(projOrRepoKeys);
+            using var repositories = _gitService.GetLocalRepos(projOrRepoKeys);
 
-            if (dryrun)
+            if (dryRunArgs.IsDryRun)
             {
                 console.WriteLine();
                 console.WriteLine("dryrun: the following repositories would be pulled");
@@ -122,7 +122,7 @@ namespace BbGit.ConsoleApp
             else
             {
                 repositories.SafelyForEach(
-                    r => this.gitService.PullLatest(r, prune, branch),
+                    r => _gitService.PullLatest(r, prune, branch),
                     cancellationToken,
                     summarizeErrors: true);
             }
@@ -139,7 +139,7 @@ namespace BbGit.ConsoleApp
                 Description = "Use the current directory as the working directly, else the repository directory is used")]
             bool useCurrentDirectory)
         {
-            using var repositories = this.gitService.GetLocalRepos(projOrRepoKeys);
+            using var repositories = _gitService.GetLocalRepos(projOrRepoKeys);
             new RepositoryExecutor(context, console, cancellationToken, useCurrentDirectory).ExecuteFor(repositories);
         }
 
@@ -147,9 +147,9 @@ namespace BbGit.ConsoleApp
         public void Delete(
             IAnsiConsole console, CancellationToken cancellationToken,
             ProjOrRepoKeys projOrRepoKeys,
-            [Option] bool dryrun = false)
+            DryRunArgs dryRunArgs)
         {
-            using var repositories = this.gitService.GetLocalRepos(projOrRepoKeys);
+            using var repositories = _gitService.GetLocalRepos(projOrRepoKeys);
 
             IEnumerable<string> BuildWarning(LocalRepo r)
             {
@@ -167,7 +167,7 @@ namespace BbGit.ConsoleApp
                 }
             }
 
-            if (dryrun)
+            if (dryRunArgs.IsDryRun)
             {
                 console.WriteLine();
                 console.WriteLine("dryrun: the following repositories would be deleted");

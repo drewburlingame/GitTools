@@ -11,11 +11,11 @@ namespace BbGit.ConsoleApp
 {
     internal class RepositoryExecutor
     {
-        private readonly IConsole console;
-        private readonly CancellationToken cancellationToken;
-        private readonly bool useCurrentDirectory;
-        private readonly string program;
-        private readonly string arguments;
+        private readonly IConsole _console;
+        private readonly CancellationToken _cancellationToken;
+        private readonly bool _useCurrentDirectory;
+        private readonly string _program;
+        private readonly string _arguments;
 
         public const string LocalRepoExtendedHelpText =
             "Your command can be templated with the following:\n\n" +
@@ -37,19 +37,19 @@ namespace BbGit.ConsoleApp
 
         public RepositoryExecutor(CommandContext context, IConsole console, CancellationToken cancellationToken, bool useCurrentDirectory)
         {
-            this.console = console;
-            this.cancellationToken = cancellationToken;
-            this.useCurrentDirectory = useCurrentDirectory;
+            _console = console;
+            _cancellationToken = cancellationToken;
+            _useCurrentDirectory = useCurrentDirectory;
             var separatedArguments = context.ParseResult!.SeparatedArguments;
-            program = separatedArguments.First();
-            arguments = separatedArguments.Skip(1).ToCsv(" ");
+            _program = separatedArguments.First();
+            _arguments = separatedArguments.Skip(1).ToCsv(" ");
         }
 
         public void ExecuteFor(IEnumerable<LocalRepo> repositories)
         {
             string Template(LocalRepo r)
             {
-                var args = arguments;
+                var args = _arguments;
                 var remoteRepo = r.RemoteRepo;
                 if (remoteRepo is not null)
                 {
@@ -71,17 +71,17 @@ namespace BbGit.ConsoleApp
             repositories.SafelyForEach(
                 r =>
                 {
-                    var workingDirPath = useCurrentDirectory ? Directory.GetCurrentDirectory() : r.FullPath;
+                    var workingDirPath = _useCurrentDirectory ? Directory.GetCurrentDirectory() : r.FullPath;
 
-                    Cli.Wrap(program)
+                    Cli.Wrap(_program)
                         .WithArguments(Template(r))
                         .WithWorkingDirectory(workingDirPath)
-                        .WithStandardOutputPipe(PipeTarget.ToDelegate(console.WriteLine))
-                        .WithStandardErrorPipe(PipeTarget.ToDelegate(console.Error.WriteLine))
+                        .WithStandardOutputPipe(PipeTarget.ToDelegate(_console.WriteLine))
+                        .WithStandardErrorPipe(PipeTarget.ToDelegate(_console.Error.WriteLine))
                         .WithValidation(CommandResultValidation.None)
-                        .ExecuteAsync(cancellationToken).Task.Wait(cancellationToken);
+                        .ExecuteAsync(_cancellationToken).Task.Wait(_cancellationToken);
                 },
-                cancellationToken,
+                _cancellationToken,
                 summarizeErrors: true);
         }
 
@@ -89,7 +89,7 @@ namespace BbGit.ConsoleApp
         {
             string Template(RemoteRepo r)
             {
-                var args = arguments;
+                var args = _arguments;
 
                 args = args
                     .Replace("$repo-name", r.Name)
@@ -104,17 +104,17 @@ namespace BbGit.ConsoleApp
             repositories.SafelyForEach(
                 r =>
                 {
-                    var workingDirPath = useCurrentDirectory ? Directory.GetCurrentDirectory() : Path.Join(Directory.GetCurrentDirectory(),r.Name);
+                    var workingDirPath = _useCurrentDirectory ? Directory.GetCurrentDirectory() : Path.Join(Directory.GetCurrentDirectory(),r.Name);
 
-                    Cli.Wrap(program)
+                    Cli.Wrap(_program)
                         .WithArguments(Template(r))
                         .WithWorkingDirectory(workingDirPath)
-                        .WithStandardOutputPipe(PipeTarget.ToDelegate(console.WriteLine))
-                        .WithStandardErrorPipe(PipeTarget.ToDelegate(console.Error.WriteLine))
+                        .WithStandardOutputPipe(PipeTarget.ToDelegate(_console.WriteLine))
+                        .WithStandardErrorPipe(PipeTarget.ToDelegate(_console.Error.WriteLine))
                         .WithValidation(CommandResultValidation.None)
-                        .ExecuteAsync(cancellationToken).Task.Wait(cancellationToken);
+                        .ExecuteAsync(_cancellationToken).Task.Wait(_cancellationToken);
                 },
-                cancellationToken,
+                _cancellationToken,
                 summarizeErrors: true);
         }
     }

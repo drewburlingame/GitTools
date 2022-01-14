@@ -5,62 +5,62 @@ namespace BbGit.BitBucket
 {
     public class RemoteProj
     {
-        private readonly Project bbProj;
+        private readonly Project _bbProj;
 
         public RemoteProj()
         {
-            this.bbProj = new Project();
+            _bbProj = new Project();
         }
 
         public RemoteProj(Project bbProj)
         {
-            this.bbProj = bbProj;
+            _bbProj = bbProj;
         }
 
-        public string LinkToSelf => bbProj.Links.Self.First().Href;
+        public string LinkToSelf => _bbProj.Links.Self.First().Href;
 
         #region bbProj delegated members
 
         public string Key
         {
-            get => bbProj.Key;
-            set => bbProj.Key = value;
+            get => _bbProj.Key;
+            set => _bbProj.Key = value;
         }
 
         public string Name
         {
-            get => bbProj.Name;
-            set => bbProj.Name = value;
+            get => _bbProj.Name;
+            set => _bbProj.Name = value;
         }
 
         public string Description
         {
-            get => bbProj.Description;
-            set => bbProj.Description = value;
+            get => _bbProj.Description;
+            set => _bbProj.Description = value;
         }
 
         public int Id
         {
-            get => bbProj.Id;
-            set => bbProj.Id = value;
+            get => _bbProj.Id;
+            set => _bbProj.Id = value;
         }
 
         public bool Public
         {
-            get => bbProj.Public;
-            set => bbProj.Public = value;
+            get => _bbProj.Public;
+            set => _bbProj.Public = value;
         }
 
         public string Type
         {
-            get => bbProj.Type;
-            set => bbProj.Type = value;
+            get => _bbProj.Type;
+            set => _bbProj.Type = value;
         }
 
         public Links Links
         {
-            get => bbProj.Links;
-            set => bbProj.Links = value;
+            get => _bbProj.Links;
+            set => _bbProj.Links = value;
         }
 
         #endregion

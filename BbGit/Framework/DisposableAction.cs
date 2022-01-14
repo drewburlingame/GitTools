@@ -4,16 +4,16 @@ namespace BbGit.Framework
 {
     public class DisposableAction : IDisposable
     {
-        private readonly Action? onDispose;
+        private readonly Action? _onDispose;
 
         public DisposableAction(Action? onDispose)
         {
-            this.onDispose = onDispose;
+            _onDispose = onDispose;
         }
 
         public void Dispose()
         {
-            this.onDispose?.Invoke();
+            _onDispose?.Invoke();
         }
     }
 }

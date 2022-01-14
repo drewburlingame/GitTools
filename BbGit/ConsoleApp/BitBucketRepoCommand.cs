@@ -17,13 +17,13 @@ namespace BbGit.ConsoleApp
     [Command("bb", Description = "Query repository info via BitBucket API")]
     public class BitBucketRepoCommand
     {
-        private readonly BbService bbService;
-        private readonly GitService gitService;
+        private readonly BbService _bbService;
+        private readonly GitService _gitService;
 
         public BitBucketRepoCommand(BbService bbService, GitService gitService)
         {
-            this.bbService = bbService ?? throw new ArgumentNullException(nameof(bbService));
-            this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
+            _bbService = bbService ?? throw new ArgumentNullException(nameof(bbService));
+            _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
         }
 
         public Task<int> Interceptor(InterceptorExecutionDelegate next,
@@ -32,7 +32,7 @@ namespace BbGit.ConsoleApp
             [Option('f')] bool forceCacheRefresh = false,
             [Option('w')] bool warnOnCacheRefresh = false)
         {
-            bbService.RefreshCaches(ignoreCache, skipCacheRefresh, forceCacheRefresh, warnOnCacheRefresh);
+            _bbService.RefreshCaches(ignoreCache, skipCacheRefresh, forceCacheRefresh, warnOnCacheRefresh);
             return next();
         }
 
@@ -51,7 +51,7 @@ namespace BbGit.ConsoleApp
             [Option('o', null, Description = "output only keys")]
             bool outputKeys = false)
         {
-            var projects = this.bbService
+            var projects = _bbService
                 .GetProjects()
                 .WhereMatches(p => p.Key, keyPattern)
                 .WhereMatches(p => p.Name, namePattern)
@@ -67,9 +67,9 @@ namespace BbGit.ConsoleApp
             }
             else
             {
-                var localRepos = this.gitService.GetLocalRepos();
+                var localRepos = _gitService.GetLocalRepos();
 
-                var remoteRepos = this.bbService
+                var remoteRepos = _bbService
                     .GetRepos(projects.Select(p => p.Name).ToCollection());
 
                 var repoPairs = localRepos.PairRepos(remoteRepos, mustHaveRemote: true).Values;
@@ -139,14 +139,14 @@ namespace BbGit.ConsoleApp
             var projKeys = projOrRepoKeys.GetProjKeysOrNull()?.ToHashSet();
             var repoKeys = projOrRepoKeys.GetRepoKeysOrNull()?.ToHashSet();
 
-            var projects = this.bbService
+            var projects = _bbService
                 .GetProjects()
                 .WhereIf(projKeys is not null, p => projKeys!.Contains(p.Key))
                 .ToCollection();
 
-            var localRepos = this.gitService.GetLocalRepos();
+            var localRepos = _gitService.GetLocalRepos();
 
-            var remoteRepos = this.bbService
+            var remoteRepos = _bbService
                 .GetRepos(projects.Select(p => p.Name).ToCollection())
                 .WhereMatches(r => r.Name, namePattern)
                 .WhereMatches(r => r.Description, descPattern)
@@ -188,11 +188,11 @@ namespace BbGit.ConsoleApp
             [Option("ssh", Description = "Set origin to ssh after completed")] 
             bool setSshOrigin = false)
         {
-            this.bbService.GetRepos()
+            _bbService.GetRepos()
                 .Where(r => repos.Contains(r.Name))
                 .UntilCancelled(ct)
                 .SafelyForEach(
-                    r => this.gitService.CloneRepo(r, setSshOrigin), 
+                    r => _gitService.CloneRepo(r, setSshOrigin), 
                     ct, summarizeErrors: true);
         }
 
@@ -206,7 +206,7 @@ namespace BbGit.ConsoleApp
             [Option('c', Description = "Use the current directory as the working directly, else the repository directory is used")] 
             bool useCurrentDirectory = false)
         {
-            var repositories = this.bbService.GetRepos()
+            var repositories = _bbService.GetRepos()
                 .Where(r => repos.Contains(r.Name));
 
             new RepositoryExecutor(context, console, cancellationToken, useCurrentDirectory)
