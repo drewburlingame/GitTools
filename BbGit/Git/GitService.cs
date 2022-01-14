@@ -8,7 +8,6 @@ using BbGit.ConsoleApp;
 using BbGit.ConsoleUtils;
 using BbGit.Framework;
 using CommandDotNet;
-using CommandDotNet.Rendering;
 using LibGit2Sharp;
 using LibGit2Sharp.Handlers;
 
@@ -160,11 +159,9 @@ namespace BbGit.Git
             RemoteRepo GetRemote(LocalRepo local)
             {
                 var originUrl = local.GetOrigin().Url;
-                Match match;
-                if (originUrl.StartsWith("ssh"))
-                    match = CaptureProjectKeyFromSshUrl.Match(originUrl);
-                else
-                    match = CaptureProjectKeyFromHttpUrl.Match(originUrl);
+                var match = originUrl.StartsWith("ssh") 
+                    ? CaptureProjectKeyFromSshUrl.Match(originUrl) 
+                    : CaptureProjectKeyFromHttpUrl.Match(originUrl);
 
                 if (match.Success)
                 {

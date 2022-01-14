@@ -16,17 +16,17 @@
   <ItemGroup>
     <PackageReference Include="Autofac" Version="6.3.0" />
     <PackageReference Include="Bitbucket.Net" Version="2.1.14" />
-    <PackageReference Include="CliWrap" Version="3.3.3" />
-    <PackageReference Include="CommandDotNet" Version="4.2.2" />
-    <PackageReference Include="CommandDotNet.DataAnnotations" Version="1.1.1" />
-    <PackageReference Include="CommandDotNet.IoC.Autofac" Version="3.0.0" />
-    <PackageReference Include="CommandDotNet.NameCasing" Version="2.0.0" />
+    <PackageReference Include="CliWrap" Version="3.4.0" />
+    <PackageReference Include="CommandDotNet" Version="6.0.2" />
+    <PackageReference Include="CommandDotNet.DataAnnotations" Version="2.0.3" />
+    <PackageReference Include="CommandDotNet.IoC.Autofac" Version="4.0.1" />
+    <PackageReference Include="CommandDotNet.NameCasing" Version="3.0.1" />
     <PackageReference Include="Jil" Version="2.17.0" />
     <PackageReference Include="LibGit2Sharp" Version="0.26.2" />
     <PackageReference Include="morelinq" Version="3.3.2" />
-    <PackageReference Include="Pastel" Version="2.1.0" />
+    <PackageReference Include="Pastel" Version="3.0.0" />
     <PackageReference Include="sharpconfig" Version="3.2.9.1" />
-    <PackageReference Include="Spectre.Console" Version="0.42.0" />
+    <PackageReference Include="Spectre.Console" Version="0.43.0" />
   </ItemGroup>
 
 </Project>

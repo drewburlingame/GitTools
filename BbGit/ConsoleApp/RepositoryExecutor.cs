@@ -6,7 +6,6 @@ using BbGit.Framework;
 using BbGit.Git;
 using CliWrap;
 using CommandDotNet;
-using CommandDotNet.Rendering;
 
 namespace BbGit.ConsoleApp
 {

@@ -2,16 +2,16 @@
 
 namespace BbGit.ConsoleApp
 {
-    [Command(Name = "BbGit", Description = "GitTools for BitBucket")]
+    [Command("BbGit", Description = "GitTools for BitBucket")]
     public class GitApplication
     {
-        [SubCommand]
+        [Subcommand]
         public BitBucketRepoCommand BitBucketRepoCommand { get; set; }
 
-        [SubCommand]
+        [Subcommand]
         public LocalRepoCommand LocalRepoCommand { get; set; }
 
-        [SubCommand]
+        [Subcommand]
         public GlobalConfigCommand GlobalConfigCommand { get; set; }
     }
 }

@@ -6,16 +6,13 @@ using System.Threading;
 using BbGit.Framework;
 using BbGit.Git;
 using CommandDotNet;
-using CommandDotNet.Rendering;
 using static MoreLinq.Extensions.ForEachExtension;
 using Spectre.Console;
 using Table=BbGit.Tables.Table;
 
 namespace BbGit.ConsoleApp
 {
-    [Command(
-        Name = "local",
-        Description = "manage local BitBucket repositories")]
+    [Command("local", Description = "manage local BitBucket repositories")]
     public class LocalRepoCommand
     {
         private readonly GitService gitService;
@@ -30,28 +27,28 @@ namespace BbGit.ConsoleApp
             IAnsiConsole console, CancellationToken cancellationToken,
             TableFormatModel tableFormatModel,
             ProjOrRepoKeys projOrRepoKeys,
-            [Option(ShortName = "n", Description = "regex to match name")]
-            string namePattern,
-            [Option(ShortName = "o", LongName=null, Description = "output only repo names")]
-            bool outputNames,
-            [Option(LongName = "opk", Description = "output only project keys")]
-            bool outputProjectKeys,
-            [Option(LongName = "branch", Description = "return only with the branch name")]
-            string branchPattern,
-            [Option(ShortName = "l", Description = "where local branch is checked out")]
-            bool isInLocalBranch,
-            [Option(ShortName = "b", Description = "with local branches")]
-            bool withLocalBranches,
-            [Option(ShortName = "c", Description = "with changes: staged or unstaged")]
-            bool withLocalChanges,
-            [Option(ShortName = "s", Description = "with stashes")]
-            bool withLocalStashes,
-            [Option(ShortName = "r", Description = "treat options:b,w,s as `OR` instead of `AND`")]
-            bool orLocalChecks,
-            [Option(ShortName = "d", Description = "has no remote repo")]
-            bool noRemote,
+            [Option('n', Description = "regex to match name")]
+            string? namePattern,
+            [Option("branch", Description = "return only with the branch name")]
+            string? branchPattern,
+            [Option('o', null, Description = "output only repo names")]
+            bool outputNames = false,
+            [Option("opk", Description = "output only project keys")]
+            bool outputProjectKeys = false,
+            [Option('l', Description = "where local branch is checked out")]
+            bool isInLocalBranch = false,
+            [Option('b', Description = "with local branches")]
+            bool withLocalBranches = false,
+            [Option('c', Description = "with changes: staged or unstaged")]
+            bool withLocalChanges = false,
+            [Option('s', Description = "with stashes")]
+            bool withLocalStashes = false,
+            [Option('r', Description = "treat options:b,w,s as `OR` instead of `AND`")]
+            bool orLocalChecks = false,
+            [Option('d', Description = "has no remote repo")]
+            bool noRemote = false,
             [Option(Description = "inverts the filter")]
-            bool not)
+            bool not = false)
         {
             using var localRepos = this.gitService.GetLocalRepos(projOrRepoKeys);
 
@@ -109,9 +106,9 @@ namespace BbGit.ConsoleApp
         public void Pull(
             IAnsiConsole console, CancellationToken cancellationToken,
             ProjOrRepoKeys projOrRepoKeys,
-            [Option] bool prune,
-            [Option] bool dryrun,
-            [Option] string branch)
+            [Option] string? branch,
+            [Option] bool prune = false,
+            [Option] bool dryrun = false)
         {
             using var repositories = this.gitService.GetLocalRepos(projOrRepoKeys);
 
@@ -138,9 +135,8 @@ namespace BbGit.ConsoleApp
         public void Exec(CommandContext context,
             IConsole console, CancellationToken cancellationToken,
             ProjOrRepoKeys projOrRepoKeys,
-            [Option(ShortName = "c",
-                Description =
-                    "Use the current directory as the working directly, else the repository directory is used")]
+            [Option('c',
+                Description = "Use the current directory as the working directly, else the repository directory is used")]
             bool useCurrentDirectory)
         {
             using var repositories = this.gitService.GetLocalRepos(projOrRepoKeys);
@@ -151,7 +147,7 @@ namespace BbGit.ConsoleApp
         public void Delete(
             IAnsiConsole console, CancellationToken cancellationToken,
             ProjOrRepoKeys projOrRepoKeys,
-            [Option] bool dryrun)
+            [Option] bool dryrun = false)
         {
             using var repositories = this.gitService.GetLocalRepos(projOrRepoKeys);
 

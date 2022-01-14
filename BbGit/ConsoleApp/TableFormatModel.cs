@@ -8,8 +8,7 @@ namespace BbGit.ConsoleApp
     {
         public enum TableFormat { c, b, h, m }
  
-        [Option(
-            ShortName = "t", 
+        [Option('t', 
             Description = "  b: borders\n" +
                           "    c: columns\n" +
                           "    h: header separator\n" +

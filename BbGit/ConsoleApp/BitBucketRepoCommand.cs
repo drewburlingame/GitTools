@@ -8,14 +8,13 @@ using BbGit.BitBucket;
 using BbGit.Framework;
 using BbGit.Git;
 using CommandDotNet;
-using CommandDotNet.Rendering;
 using static MoreLinq.Extensions.ForEachExtension;
 using Spectre.Console;
 using Table = BbGit.Tables.Table;
 
 namespace BbGit.ConsoleApp
 {
-    [Command(Name = "bb", Description = "Query repository info via BitBucket API")]
+    [Command("bb", Description = "Query repository info via BitBucket API")]
     public class BitBucketRepoCommand
     {
         private readonly BbService bbService;
@@ -28,10 +27,10 @@ namespace BbGit.ConsoleApp
         }
 
         public Task<int> Interceptor(InterceptorExecutionDelegate next,
-            [Option(ShortName = "i")] bool ignoreCache,
-            [Option(ShortName = "s")] bool skipCacheRefresh,
-            [Option(ShortName = "f")] bool forceCacheRefresh,
-            [Option(ShortName = "w")] bool warnOnCacheRefresh)
+            [Option('i')] bool ignoreCache = false,
+            [Option('s')] bool skipCacheRefresh = false,
+            [Option('f')] bool forceCacheRefresh = false,
+            [Option('w')] bool warnOnCacheRefresh = false)
         {
             bbService.RefreshCaches(ignoreCache, skipCacheRefresh, forceCacheRefresh, warnOnCacheRefresh);
             return next();
@@ -43,13 +42,13 @@ namespace BbGit.ConsoleApp
                 "for regex flags, see https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-options")]
         public int Proj(IAnsiConsole console, CancellationToken cancellationToken,
             TableFormatModel tableFormatModel,
-            [Option(ShortName = "k", Description = "regex to match key")]
-            string keyPattern = null,
-            [Option(ShortName = "n", Description = "regex to match name")]
-            string namePattern = null,
-            [Option(ShortName = "d", Description = "regex to match description")]
-            string descPattern = null,
-            [Option(ShortName = "o", LongName=null, Description = "output only keys")]
+            [Option('k', Description = "regex to match key")]
+            string? keyPattern,
+            [Option('n', Description = "regex to match name")]
+            string? namePattern,
+            [Option('d', Description = "regex to match description")]
+            string? descPattern,
+            [Option('o', null, Description = "output only keys")]
             bool outputKeys = false)
         {
             var projects = this.bbService
@@ -110,22 +109,22 @@ namespace BbGit.ConsoleApp
             IAnsiConsole console, CancellationToken cancellationToken, 
             TableFormatModel tableFormatModel,
             ProjOrRepoKeys projOrRepoKeys,
-            [Option(ShortName = "n", Description = "regex to match name")]
-            string namePattern,
-            [Option(ShortName = "d", Description = "regex to match description")]
-            string descPattern,
-            [Option(ShortName = "o", LongName=null, Description = "output only names")]
-            bool outputNames,
-            [Option(ShortName = "c", Description = "return only cloned")]
-            bool cloned,
-            [Option(ShortName = "u", Description = "return only uncloned")]
-            bool uncloned,
-            [Option(LongName = "public", Description = "return only public")]
-            bool onlyPublic,
-            [Option(LongName = "private", Description = "return only private")]
-            bool onlyPrivate,
-            [Option(ShortName = "x", Description = "exclude repositories marked obsolete")]
-            bool excludeObsolete)
+            [Option('n', Description = "regex to match name")]
+            string? namePattern,
+            [Option('d', Description = "regex to match description")]
+            string? descPattern,
+            [Option('o', null, Description = "output only names")]
+            bool outputNames = false,
+            [Option('c', Description = "return only cloned")]
+            bool cloned = false,
+            [Option('u', Description = "return only uncloned")]
+            bool uncloned = false,
+            [Option("public", Description = "return only public")]
+            bool onlyPublic = false,
+            [Option("private", Description = "return only private")]
+            bool onlyPrivate = false,
+            [Option('x', Description = "exclude repositories marked obsolete")]
+            bool excludeObsolete = false)
         {
             if (cloned && uncloned)
             {
@@ -183,18 +182,17 @@ namespace BbGit.ConsoleApp
         }
 
         [Command(Description = "Clone all repositories matching the search criteria")]
-        public void Clone(
-            IConsole console, CancellationToken cancellationToken,
+        public void Clone(CancellationToken ct,
             [Operand] [Required] string[] repos,
-            [Option(LongName = "ssh", Description = "Set origin to ssh after completed")] 
+            [Option("ssh", Description = "Set origin to ssh after completed")] 
             bool setSshOrigin = false)
         {
             this.bbService.GetRepos()
                 .Where(r => repos.Contains(r.Name))
+                .UntilCancelled(ct)
                 .SafelyForEach(
                     r => this.gitService.CloneRepo(r, setSshOrigin), 
-                    cancellationToken,
-                    summarizeErrors: true);
+                    ct, summarizeErrors: true);
         }
 
         [Command(
@@ -204,9 +202,8 @@ namespace BbGit.ConsoleApp
         public void Exec(CommandContext context,
             IConsole console, CancellationToken cancellationToken,
             [Operand][Required] string[] repos,
-            [Option(ShortName = "c", 
-                Description = "Use the current directory as the working directly, else the repository directory is used")] 
-            bool useCurrentDirectory)
+            [Option('c', Description = "Use the current directory as the working directly, else the repository directory is used")] 
+            bool useCurrentDirectory = false)
         {
             var repositories = this.bbService.GetRepos()
                 .Where(r => repos.Contains(r.Name));

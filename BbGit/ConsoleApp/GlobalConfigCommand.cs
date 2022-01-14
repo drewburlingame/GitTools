@@ -3,9 +3,7 @@ using CommandDotNet;
 
 namespace BbGit.ConsoleApp
 {
-    [Command(
-        Name = "config-global",
-        Description = "Global configurations for BbGit. e.g. AWS account info")]
+    [Command("config-global", Description = "Global configurations for BbGit. e.g. AWS account info")]
     public class GlobalConfigCommand
     {
         [Command(Description = "Initializes BbGit configuration. " +

@@ -8,7 +8,6 @@ using BbGit.Git;
 using Bitbucket.Net;
 using Bitbucket.Net.Models.Core.Projects;
 using CommandDotNet;
-using CommandDotNet.Rendering;
 
 namespace BbGit.BitBucket
 {

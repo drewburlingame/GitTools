@@ -6,11 +6,10 @@ namespace BbGit.ConsoleApp
 {
     public class ProjOrRepoKeys : IArgumentModel
     {
-        [Option(ShortName = "p", Description = "When specified, the inputs are parsed as project keys instead of repository names")]
+        [Option('p', Description = "When specified, the inputs are parsed as project keys instead of repository names")]
         public bool UseProjKeys { get; set; }
 
-        [Operand(
-            Name = "inputs", 
+        [Operand("inputs", 
             Description = "The repository names or project keys to use in the command. Assumes repository unless -p is specified")]
         public IEnumerable<string> Inputs { get; set; }
 

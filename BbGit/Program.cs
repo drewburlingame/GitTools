@@ -12,7 +12,6 @@ using CommandDotNet.Diagnostics;
 using CommandDotNet.Execution;
 using CommandDotNet.IoC.Autofac;
 using CommandDotNet.NameCasing;
-using CommandDotNet.Rendering;
 using LibGit2Sharp;
 using LibGit2Sharp.Handlers;
 using Spectre.Console;
@@ -34,7 +33,7 @@ namespace BbGit
                 var configs = AppConfigs.Load();
 
                 var appRunner = new AppRunner<GitApplication>()
-                    .UseDefaultMiddleware(excludePrompting: true)
+                    .UseDefaultMiddleware()
                     .GiveCancellationTokenToFlurl()
                     .Configure(c => c.UseParameterResolver(ctx => AnsiConsole.Console))
                     .UseNameCasing(Case.KebabCase)
@@ -47,6 +46,7 @@ namespace BbGit
                         ex.Print();
                         return ExitCodes.Error.Result;
                     })
+                    .UseCommandLogger()
                     .RegisterContainer(configs);
 
                 return appRunner.Run(args);
