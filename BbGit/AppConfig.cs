@@ -1,4 +1,6 @@
-﻿namespace BbGit
+﻿#pragma warning disable 8618
+
+namespace BbGit
 {
     public class AppConfig
     {

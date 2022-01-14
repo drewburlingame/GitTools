@@ -5,10 +5,10 @@ namespace BbGit.Git
 {
     public class RemoteRepo
     {
-        private readonly Repository repository;
+        private readonly Repository _repository;
         public string ProjectKey => Project.Key;
-        public string HttpUrl => repository.Links.Clone.FirstOrDefault(c => c.Name == "http")?.Href;
-        public string SshUrl => repository.Links.Clone.FirstOrDefault(c => c.Name == "ssh")?.Href;
+        public string? HttpUrl => _repository.Links.Clone.FirstOrDefault(c => c.Name == "http")?.Href;
+        public string? SshUrl => _repository.Links.Clone.FirstOrDefault(c => c.Name == "ssh")?.Href;
 
         /// <summary>for serialization</summary>
         public RemoteRepo() : this(new Repository())
@@ -17,7 +17,7 @@ namespace BbGit.Git
 
         public RemoteRepo(Repository repository)
         {
-            this.repository = repository;
+            _repository = repository;
         }
 
         #region Repository delegated members
@@ -25,63 +25,63 @@ namespace BbGit.Git
         // It's called Name in the BitBucket UI
         public string Name
         {
-            get => repository.Slug;
-            set => repository.Slug = value;
+            get => _repository.Slug;
+            set => _repository.Slug = value;
         }
 
         // It's called Description in the BitBucket UI
         public string Description
         {
-            get => repository.Name;
-            set => repository.Name = value;
+            get => _repository.Name;
+            set => _repository.Name = value;
         }
 
         public ProjectRef Project
         {
-            get => repository.Project;
-            set => repository.Project = value;
+            get => _repository.Project;
+            set => _repository.Project = value;
         }
 
         public int Id
         {
-            get => repository.Id;
-            set => repository.Id = value;
+            get => _repository.Id;
+            set => _repository.Id = value;
         }
 
         public string ScmId
         {
-            get => repository.ScmId;
-            set => repository.ScmId = value;
+            get => _repository.ScmId;
+            set => _repository.ScmId = value;
         }
 
         public string State
         {
-            get => repository.State;
-            set => repository.State = value;
+            get => _repository.State;
+            set => _repository.State = value;
         }
 
         public string StatusMessage
         {
-            get => repository.StatusMessage;
-            set => repository.StatusMessage = value;
+            get => _repository.StatusMessage;
+            set => _repository.StatusMessage = value;
         }
 
         public bool Forkable
         {
-            get => repository.Forkable;
-            set => repository.Forkable = value;
+            get => _repository.Forkable;
+            set => _repository.Forkable = value;
         }
 
         public bool Public
         {
-            get => repository.Public;
-            set => repository.Public = value;
+            get => _repository.Public;
+            set => _repository.Public = value;
         }
 
         public CloneLinks Links
         {
-            get => repository.Links;
-            set => repository.Links = value;
+            get => _repository.Links;
+            set => _repository.Links = value;
         }
 
         #endregion

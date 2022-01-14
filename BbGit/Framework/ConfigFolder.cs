@@ -6,7 +6,7 @@ namespace BbGit.Framework
 {
     public class ConfigFolder
     {
-        private readonly ConfigFolder? parentConfigFolder;
+        private readonly ConfigFolder? _parentConfigFolder;
         public bool Exists { get; }
         public string FolderPath { get; }
 
@@ -36,7 +36,7 @@ namespace BbGit.Framework
 
         private ConfigFolder(ConfigFolder parentConfigFolder, string name)
         {
-            this.parentConfigFolder = parentConfigFolder;
+            _parentConfigFolder = parentConfigFolder;
 
             FolderPath = Path.Combine(parentConfigFolder.FolderPath,name);
             Exists = parentConfigFolder.Exists && Directory.Exists(FolderPath);
@@ -50,7 +50,7 @@ namespace BbGit.Framework
             return filePath;
         }
 
-        public string GetConfig(string filename)
+        public string? GetConfig(string filename)
         {
             var filePath = this.BuildFilePath(filename);
             return Exists && File.Exists(filePath) 
@@ -67,10 +67,10 @@ namespace BbGit.Framework
 
         public T GetJsonConfigOrDefault<T>(string filename) where T : class, new()
         {
-            return GetJsonConfigOrEmpty<T>(filename) ?? new T();
+            return GetJsonConfigOrNull<T>(filename) ?? new T();
         }
 
-        public T GetJsonConfigOrEmpty<T>(string filename) where T: class
+        public T? GetJsonConfigOrNull<T>(string filename) where T: class
         {
             filename = SetJsonExtension(filename);
             var json = this.GetConfig(filename);
@@ -89,7 +89,7 @@ namespace BbGit.Framework
         {
             // extra check in case another ConfigFolder created the directory.
             if (Exists || Directory.Exists(FolderPath)) return;
-            parentConfigFolder?.EnsureDirectoryExists();
+            _parentConfigFolder?.EnsureDirectoryExists();
             var directory = Directory.CreateDirectory(FolderPath);
             directory.Attributes = FileAttributes.Directory | FileAttributes.Hidden;
         }

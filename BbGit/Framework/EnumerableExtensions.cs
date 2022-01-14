@@ -12,9 +12,9 @@ namespace BbGit.Framework
 {
     internal static class EnumerableExtensions
     {
-        public static bool IsNullOrEmpty<T>(this IEnumerable<T> enumerable)
+        public static bool IsNullOrEmpty<T>(this IEnumerable<T>? enumerable)
         {
-            return enumerable == null || !enumerable.Any();
+            return enumerable is null || !enumerable.Any();
         }
 
         public static bool IsLast<T>(this ICollection<T> collection, int index) => index == collection.Count - 1;
@@ -30,7 +30,7 @@ namespace BbGit.Framework
         public static IEnumerable<T> WhereIf<T>(this IEnumerable<T> items, bool condition, Func<T, bool> filter) =>
             condition ? items.Where(filter) : items;
 
-        public static IEnumerable<T> WhereMatches<T>(this IEnumerable<T> items, Func<T, string> getValue, 
+        public static IEnumerable<T> WhereMatches<T>(this IEnumerable<T> items, Func<T, string?> getValue, 
             string? regexPattern, 
             RegexOptions regexOptions = RegexOptions.Compiled)
         {
@@ -39,7 +39,7 @@ namespace BbGit.Framework
                 : items.WhereMatches(getValue, new Regex(regexPattern, regexOptions));
         }
 
-        public static IEnumerable<T> WhereMatches<T>(this IEnumerable<T> items, Func<T, string> getValue, Regex? regex)
+        public static IEnumerable<T> WhereMatches<T>(this IEnumerable<T> items, Func<T, string?> getValue, Regex? regex)
             => items.Where(t =>
             {
                 if (regex is null) return true;
@@ -49,7 +49,7 @@ namespace BbGit.Framework
             });
 
         public static DisposableCollection<T> ToDisposableCollection<T>(this IEnumerable<T> items) where T : IDisposable 
-            => new DisposableCollection<T>(items.ToCollection());
+            => new(items.ToCollection());
 
         public static async Task<IEnumerable<T1>> SelectManyAsync<T, T1>(this IEnumerable<T> enumeration, Func<T, Task<IEnumerable<T1>>> func)
         {
@@ -84,21 +84,21 @@ namespace BbGit.Framework
         {
             var items = values as ICollection<T> ?? values.ToList();
 
-            var errors = new List<(T item, int index, Exception ex)>();
+            var errors = new List<(T repoName, int index, Exception ex)>();
 
             var errorsInARow = 0;
-            items.ForEach((r, i) =>
+            items.ForEach((repoName, index) =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                Console.WriteLine($"{i + 1} of {items.Count} - {getName(r).ColorBranch()}".ColorDefault());
+                Console.WriteLine($"{index + 1} of {items.Count} - {getName(repoName).ColorBranch()}".ColorDefault());
 
                 try
                 {
-                    action(r);
+                    action(repoName);
                     errorsInARow = 0;
                 }
 
-                catch (OperationCanceledException oce)
+                catch (OperationCanceledException)
                 {
                     throw;
                 }
@@ -113,7 +113,7 @@ namespace BbGit.Framework
 
                     e.Print();
 
-                    errors.Add((r, i + 1, e));
+                    errors.Add((repoName, index + 1, e));
                 }
 
             });
@@ -125,7 +125,7 @@ namespace BbGit.Framework
                 Console.Out.WriteLine("");
 
                 errors.ForEach(e => Console.WriteLine(
-                    $"{e.index} of {items.Count}: {e.item.ColorRepo()} > {e.ex.Message.ColorError()}".ColorDefault()));
+                    $"{e.index} of {items.Count}: {e.repoName!.ColorRepo()} > {e.ex.Message.ColorError()}".ColorDefault()));
             }
         }
 

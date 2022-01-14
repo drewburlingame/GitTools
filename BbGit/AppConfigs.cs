@@ -10,7 +10,7 @@ namespace BbGit
 {
     public class AppConfigs
     {
-        public AppConfig Default { get; set; }
+        public AppConfig? Default { get; set; }
         public Dictionary<string, AppConfig> ConfigsByName { get; set; } = new();
         public NameValueCollection Settings { get; set; } = new();
 

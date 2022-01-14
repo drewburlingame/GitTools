@@ -7,88 +7,94 @@ namespace BbGit.Framework
 {
     public class DisposableCollection<T> : ICollection<T>, IDisposable where T : IDisposable
     {
-        private ICollection<T> innerCollection;
-        private bool isDisposing;
+        private readonly ICollection<T> _innerCollection;
+        private bool _isDisposing;
 
-        public static DisposableCollection<T> Empty => new DisposableCollection<T>(new Collection<T>());
+        public static DisposableCollection<T> Empty => new(new Collection<T>());
 
         public DisposableCollection(ICollection<T> innerCollection)
         {
-            this.innerCollection = innerCollection;
+            _innerCollection = innerCollection;
         }
-
-        /// <inheritdoc />
+        
         public IEnumerator<T> GetEnumerator()
         {
-            return this.innerCollection.GetEnumerator();
+            AssertNotDisposed();
+            return _innerCollection.GetEnumerator();
         }
-
-        /// <inheritdoc />
+        
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IEnumerable) this.innerCollection).GetEnumerator();
+            AssertNotDisposed();
+            return ((IEnumerable) _innerCollection).GetEnumerator();
         }
-
-        /// <inheritdoc />
+        
         public void Add(T item)
         {
-            this.innerCollection.Add(item);
+            AssertNotDisposed();
+            _innerCollection.Add(item);
         }
-
-        /// <inheritdoc />
+        
         public void Clear()
         {
-            this.innerCollection.Clear();
+            AssertNotDisposed();
+            _innerCollection.Clear();
         }
-
-        /// <inheritdoc />
+        
         public bool Contains(T item)
         {
-            return this.innerCollection.Contains(item);
+            AssertNotDisposed();
+            return _innerCollection.Contains(item);
         }
-
-        /// <inheritdoc />
+        
         public void CopyTo(T[] array, int arrayIndex)
         {
-            this.innerCollection.CopyTo(array, arrayIndex);
+            AssertNotDisposed();
+            _innerCollection.CopyTo(array, arrayIndex);
         }
-
-        /// <inheritdoc />
+        
         public bool Remove(T item)
         {
-            return this.innerCollection.Remove(item);
+            AssertNotDisposed();
+            return _innerCollection.Remove(item);
+        }
+        
+        public int Count
+        {
+            get { AssertNotDisposed(); return _innerCollection.Count; }
         }
 
-        /// <inheritdoc />
-        public int Count => this.innerCollection.Count;
+        public bool IsReadOnly
+        {
+            get { AssertNotDisposed(); return _innerCollection.IsReadOnly; }
+        }
 
-        /// <inheritdoc />
-        public bool IsReadOnly => this.innerCollection.IsReadOnly;
-
-        /// <inheritdoc />
         public void Dispose()
         {
-            if (this.isDisposing)
+            if (_isDisposing)
             {
                 return;
             }
 
             lock (this)
             {
-                if (this.isDisposing || this.innerCollection == null)
+                if (_isDisposing)
                 {
                     return;
                 }
 
-                this.isDisposing = true;
+                _isDisposing = true;
 
-                foreach (var item in this.innerCollection)
+                foreach (var item in _innerCollection)
                 {
                     item.Dispose();
                 }
-
-                this.innerCollection = null;
             }
+        }
+
+        private void AssertNotDisposed()
+        {
+            if (_isDisposing) throw new ObjectDisposedException(nameof(DisposableCollection<T>));
         }
     }
 }

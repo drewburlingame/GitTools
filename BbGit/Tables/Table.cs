@@ -14,11 +14,11 @@ namespace BbGit.Tables
         private readonly bool _includeCount;
         private readonly TableBorder _tableBorder;
 
-        private Dictionary<string, Column> _columnsByProperty;
+        private Dictionary<string, Column>? _columnsByProperty;
 
         public bool HideZeros { get; set; }
 
-        public Table(IAnsiConsole console, TableBorder theme = null, bool includeCount = false)
+        public Table(IAnsiConsole console, TableBorder? theme = null, bool includeCount = false)
         {
             _console = console;
             _includeCount = includeCount;
@@ -59,12 +59,12 @@ namespace BbGit.Tables
 
             var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
-            Column GetOverriden(PropertyInfo property) => 
+            Column? GetOverriden(PropertyInfo property) => 
                 _columnsByProperty?.GetValueOrDefault(property.Name);
 
-            if (this.Count == 0)
+            if (Count == 0)
             {
-                base.AddRange(properties.Select(p =>
+                AddRange(properties.Select(p =>
                     GetOverriden(p) ?? BuildColumn(p.Name, p.PropertyType)));
             }
 
@@ -83,14 +83,14 @@ namespace BbGit.Tables
                         ? HAlign.center
                         : HAlign.left,
                 DisplayAs = HideZeros && type.IsNumeric()
-                    ? o => o is 0 ? null : o.ToString()
+                    ? o => o is 0 ? null : o?.ToString()
                     : type == typeof(bool)
                         ? o => o is true ? "x" : null
                         : null
             };
         }
 
-        public void Write(IEnumerable<IEnumerable<object>> rows)
+        public void Write(IEnumerable<IEnumerable<object?>> rows)
         {
             var table = new SpectreTable
             {
@@ -101,7 +101,7 @@ namespace BbGit.Tables
                 table.AddColumn(column.ToTableColumn());
             }
 
-            string Format(object obj, int columnIndex)
+            string Format(object? obj, int columnIndex)
             {
                 var displayAs = this[columnIndex].DisplayAs;
                 return (displayAs is null 

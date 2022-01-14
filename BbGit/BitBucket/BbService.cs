@@ -13,16 +13,16 @@ namespace BbGit.BitBucket
 {
     public class BbService
     {
-        private readonly IConsole console;
-        private readonly BitbucketClient bbServerClient;
-        private readonly AppConfig appConfig;
+        private readonly IConsole _console;
+        private readonly BitbucketClient _bbServerClient;
+        private readonly AppConfig _appConfig;
         private bool _ignoreCache;
 
         public BbService(IConsole console, BitbucketClient bbServerClient, AppConfig appConfig)
         {
-            this.console = console;
-            this.bbServerClient = bbServerClient;
-            this.appConfig = appConfig;
+            _console = console;
+            _bbServerClient = bbServerClient;
+            _appConfig = appConfig;
         }
 
         public void RefreshCaches(
@@ -36,7 +36,7 @@ namespace BbGit.BitBucket
                 var projectCache = ProjectCache.Get();
                 var repoCache = RepoCache.Get();
 
-                var refreshInterval = TimeSpan.FromDays(appConfig.CacheTTLInDays);
+                var refreshInterval = TimeSpan.FromDays(_appConfig.CacheTTLInDays);
 
                 bool RefreshCache(DateTime cachedOn) => 
                     forceCacheRefresh || !skipCacheRefresh && cachedOn.Add(refreshInterval) < DateTime.Now;
@@ -45,7 +45,7 @@ namespace BbGit.BitBucket
                 {
                     if (warnOnCacheRefresh)
                     {
-                        console.WriteLine("Refreshing project cache from BitBucket");
+                        _console.WriteLine("Refreshing project cache from BitBucket");
                     }
 
                     var sw = Stopwatch.StartNew();
@@ -56,7 +56,7 @@ namespace BbGit.BitBucket
 
                     if (warnOnCacheRefresh)
                     {
-                        console.WriteLine($"project cache refreshed: {sw.Elapsed}");
+                        _console.WriteLine($"project cache refreshed: {sw.Elapsed}");
                     }
                 }
 
@@ -64,7 +64,7 @@ namespace BbGit.BitBucket
                 {
                     if (warnOnCacheRefresh)
                     {
-                        console.WriteLine("Refreshing repository cache from BitBucket");
+                        _console.WriteLine("Refreshing repository cache from BitBucket");
                     }
 
                     var sw = Stopwatch.StartNew();
@@ -76,7 +76,7 @@ namespace BbGit.BitBucket
 
                     if (warnOnCacheRefresh)
                     {
-                        console.WriteLine($"repository cache refreshed: {sw.Elapsed}");
+                        _console.WriteLine($"repository cache refreshed: {sw.Elapsed}");
                     }
                 }
             }
@@ -109,7 +109,7 @@ namespace BbGit.BitBucket
 
         public IEnumerable<RemoteRepo> GetRepos()
         {
-            return GetReposAsync((string)null).Result;
+            return GetReposAsync().Result;
         }
 
         public IEnumerable<RemoteRepo> GetRepos(string projectName)
@@ -117,7 +117,7 @@ namespace BbGit.BitBucket
             return GetReposAsync(projectName).Result;
         }
 
-        public async Task<IEnumerable<RemoteRepo>> GetReposAsync(string projectName = null)
+        public async Task<IEnumerable<RemoteRepo>> GetReposAsync(string? projectName = null)
         {
             IEnumerable<Repository> repositories;
 
@@ -144,12 +144,12 @@ namespace BbGit.BitBucket
 
         private async Task<IEnumerable<Project>> GetProjectsRawAsync()
         {
-            return (await this.bbServerClient.GetProjectsAsync());
+            return (await _bbServerClient.GetProjectsAsync());
         }
 
-        private Task<IEnumerable<Repository>> GetReposRawAsync(string projectName = null)
+        private Task<IEnumerable<Repository>> GetReposRawAsync(string? projectName = null)
         {
-            return this.bbServerClient.GetRepositoriesAsync(projectName: projectName);
+            return _bbServerClient.GetRepositoriesAsync(projectName: projectName);
         }
     }
 }

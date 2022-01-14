@@ -13,12 +13,12 @@ namespace BbGit.Tables
             // https://stackoverflow.com/a/672212/169336
             Type type = typeof(TSource);
 
-            MemberExpression member = propertyLambda.Body as MemberExpression;
-            if (member == null)
+            MemberExpression? member = propertyLambda.Body as MemberExpression;
+            if (member is null)
                 throw new ArgumentException($"Expression '{propertyLambda}' refers to a method, not a property.");
 
-            PropertyInfo propInfo = member.Member as PropertyInfo;
-            if (propInfo == null)
+            PropertyInfo? propInfo = member.Member as PropertyInfo;
+            if (propInfo is null)
                 throw new ArgumentException($"Expression '{propertyLambda}' refers to a field, not a property.");
 
             if (propInfo.ReflectedType != null 

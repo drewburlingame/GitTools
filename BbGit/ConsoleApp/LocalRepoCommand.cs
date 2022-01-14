@@ -93,7 +93,7 @@ namespace BbGit.ConsoleApp
                     .Where(k => k is not null)
                     .Distinct()
                     .OrderBy(k => k)
-                    .ForEach(console.WriteLine);
+                    .ForEach(console.WriteLine!);
             }
             else
             {
@@ -191,11 +191,11 @@ namespace BbGit.ConsoleApp
 
                         try
                         {
-                            r.GitRepo.Dispose();
+                            r.Dispose();
                             console.WriteLine($"Deleting {r.FullPath}");
                             Directory.Delete(r.FullPath, true);
                         }
-                        catch (UnauthorizedAccessException uae)
+                        catch (UnauthorizedAccessException)
                         {
                             r.FullPath.SetFileAttributes(FileAttributes.Normal);
                             Directory.Delete(r.FullPath, true);
@@ -206,7 +206,7 @@ namespace BbGit.ConsoleApp
             }
         }
 
-        private static void PrintReposTable(IAnsiConsole console, IEnumerable<LocalRepo> repos, TableBorder tableBorder = null)
+        private static void PrintReposTable(IAnsiConsole console, IEnumerable<LocalRepo> repos, TableBorder? tableBorder = null)
         {
             var records = repos.Select(l => new
             {

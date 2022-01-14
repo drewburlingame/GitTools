@@ -8,7 +8,7 @@ namespace BbGit.Git
     {
         public static Remote GetOrigin(this LocalRepo localRepo)
         {
-            return localRepo.GitRepo.Network.Remotes["origin"];
+            return localRepo.GitRepo!.Network.Remotes["origin"];
         }
 
         public static IDisposable ToggleHttpsUrl(this LocalRepo localRepo)
@@ -26,34 +26,66 @@ namespace BbGit.Git
             {
                 return new DisposableAction(null);
             }
-            
-            var httpsUrl = localRepo.RemoteRepo?.HttpUrl;
+
+            if (localRepo.RemoteRepo is null)
+            {
+                throw new Exception($"remote repo not found for {localRepo}");
+            }
+
+            var httpsUrl = localRepo.RemoteRepo.HttpUrl;
             if (httpsUrl == null)
             {
-                throw new Exception($"remote repo not found for {localRepo.Name}");
+                throw new Exception($"http url is null for {localRepo}");
             }
 
             var originalUrl = remote.Url;
             var originalPushUrl = remote.PushUrl;
 
-            SetOriginUrl(localRepo.GitRepo, httpsUrl, httpsUrl);
+            SetOriginUrl(localRepo, httpsUrl, httpsUrl);
 
-            return new DisposableAction(() => SetOriginUrl(localRepo.GitRepo, originalUrl, originalPushUrl));
+            return new DisposableAction(() => SetOriginUrl(localRepo, originalUrl, originalPushUrl));
         }
 
         public static void SetOriginToHttp(this LocalRepo localRepo)
         {
-            SetOriginUrl(localRepo.GitRepo, localRepo.RemoteRepo.HttpUrl, localRepo.RemoteRepo.HttpUrl);
+            if (localRepo.RemoteRepo is null)
+            {
+                throw new Exception($"remote repo not found for {localRepo}");
+            }
+
+            var url = localRepo.RemoteRepo.HttpUrl;
+            if (url is null)
+            {
+                throw new Exception($"http url is null for {localRepo}");
+            }
+
+            SetOriginUrl(localRepo, url, url);
         }
 
         public static void SetOriginToSsh(this LocalRepo localRepo)
         {
-            SetOriginUrl(localRepo.GitRepo, localRepo.RemoteRepo.SshUrl, localRepo.RemoteRepo.SshUrl);
+            if (localRepo.RemoteRepo is null)
+            {
+                throw new Exception($"remote repo not found for {localRepo}");
+            }
+
+            var url = localRepo.RemoteRepo.SshUrl;
+            if (url is null)
+            {
+                throw new Exception($"ssh url is null for {localRepo}");
+            }
+
+            SetOriginUrl(localRepo, url, url);
         }
 
-        private static void SetOriginUrl(Repository repo, string url, string pushUrl)
+        private static void SetOriginUrl(LocalRepo localRepo, string? url, string? pushUrl)
         {
-            repo.Network.Remotes.Update("origin", updater =>
+            if (localRepo.GitRepo is null)
+            {
+                throw new Exception($"{localRepo} is not a git repo");
+            }
+
+            localRepo.GitRepo.Network.Remotes.Update("origin", updater =>
             {
                 updater.Url = url;
                 updater.PushUrl = pushUrl;

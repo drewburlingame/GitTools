@@ -28,7 +28,7 @@ namespace BbGit.ConsoleApp
             {
                 pairs.Values
                     .Where(p => p.Remote is null)
-                    .ForEach(p => pairs.Remove(p.Local.Name));
+                    .ForEach(p => pairs.Remove(p.Local!.Name));
             }
 
             if (isCloned.HasValue)
@@ -37,13 +37,13 @@ namespace BbGit.ConsoleApp
                 {
                     pairs.Values
                         .Where(p => p.Local is null)
-                        .ForEach(p => pairs.Remove(p.Remote.Name));
+                        .ForEach(p => pairs.Remove(p.Remote!.Name));
                 }
                 else
                 {
                     pairs.Values
-                        .Where(p => p.Local is not null)
-                        .ForEach(p => pairs.Remove(p.Remote.Name));
+                        .Where(p => p.Local is not null && p.Remote is not null)
+                        .ForEach(p => pairs.Remove(p.Remote!.Name));
                 }
             }
 

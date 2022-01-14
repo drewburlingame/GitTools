@@ -8,9 +8,9 @@ namespace BbGit.BitBucket
     public class ProjectCache
     {
         public DateTime CachedOn { get; set; }
-        public Dictionary<string,Project> ProjectsByKey { get; set; }
+        public Dictionary<string, Project> ProjectsByKey { get; set; } = null!;
 
-        private static ProjectCache _instance;
+        private static ProjectCache? _instance;
         
         public static ProjectCache Get()
         {

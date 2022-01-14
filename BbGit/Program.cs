@@ -25,8 +25,8 @@ namespace BbGit
         {
             Debugger.AttachIfDebugDirective(args);
 
-            AppDomain.CurrentDomain.UnhandledException += (sender, args) 
-                => ((Exception)args.ExceptionObject).Print();
+            AppDomain.CurrentDomain.UnhandledException += (_, eventArgs) 
+                => ((Exception)eventArgs.ExceptionObject).Print();
 
             try
             {
@@ -35,15 +35,35 @@ namespace BbGit
                 var appRunner = new AppRunner<GitApplication>()
                     .UseDefaultMiddleware()
                     .GiveCancellationTokenToFlurl()
-                    .Configure(c => c.UseParameterResolver(ctx => AnsiConsole.Console))
+                    .Configure(c => c.UseParameterResolver(_ => AnsiConsole.Console))
                     .UseNameCasing(Case.KebabCase)
                     .UseDataAnnotationValidations(showHelpOnError: true)
                     .UseTimerDirective()
                     .UseDefaultsFromAppSetting(configs.Settings, true)
                     .UseErrorHandler((ctx, ex) =>
                     {
-                        ctx.Console.Error.WriteLine(ctx.ToString());
-                        ex.Print();
+                        var errorWriter = (ctx?.Console.Error ?? Console.Error);
+                        ex.Print(errorWriter.WriteLine,
+                            includeProperties: true,
+                            includeData: true,
+                            includeStackTrace: false);
+
+                        // use CommandLogger if it has not already logged for this CommandContext
+                        if (ctx is not null && !CommandLogger.HasLoggedFor(ctx))
+                        {
+                            CommandLogger.Log(ctx,
+                                writer: errorWriter.WriteLine,
+                                includeSystemInfo: true,
+                                includeAppConfig: false
+                            );
+
+                            errorWriter.WriteLine();
+                        }
+
+                        // print help for the target command or root command
+                        // if the exception occurred before a command could be parsed
+                        ctx?.PrintHelp();
+
                         return ExitCodes.Error.Result;
                     })
                     .UseCommandLogger()
@@ -64,7 +84,7 @@ namespace BbGit
 
         private class CommandContextHolder
         {
-            public CommandContext Context { get; set; }
+            public CommandContext Context { get; set; } = null!;
         }
 
         private static AppRunner RegisterContainer(this AppRunner appRunner, AppConfigs configs)
@@ -103,8 +123,11 @@ namespace BbGit
 
         private static Task<int> SetCommandContextForDependencyResolver(CommandContext context, ExecutionDelegate next)
         {
-            var holder = (CommandContextHolder)context!.DependencyResolver!.Resolve(typeof(CommandContextHolder));
-            holder.Context = context;
+            var holder = (CommandContextHolder?)context!.DependencyResolver!.Resolve(typeof(CommandContextHolder));
+            if (holder is not null)
+            {
+                holder.Context = context;
+            }
             return next(context);
         }
 

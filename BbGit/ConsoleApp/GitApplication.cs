@@ -1,4 +1,6 @@
-﻿using CommandDotNet;
+﻿#pragma warning disable 8618
+
+using CommandDotNet;
 
 namespace BbGit.ConsoleApp
 {

@@ -4,9 +4,9 @@ namespace BbGit.Framework
 {
     public class DisposableAction : IDisposable
     {
-        private readonly Action onDispose;
+        private readonly Action? onDispose;
 
-        public DisposableAction(Action onDispose)
+        public DisposableAction(Action? onDispose)
         {
             this.onDispose = onDispose;
         }

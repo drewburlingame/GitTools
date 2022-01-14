@@ -10,26 +10,29 @@ namespace BbGit.Git
     {
         private static readonly string[] MainBranchNames = {"master", "develop"};
 
-        private bool isDisposing;
+        private bool _isDisposing;
         public string FullPath { get; }
         public string Name { get; }
         public bool Exists { get; private set; }
         public bool IsGitDir { get; private set; }
-        public Repository GitRepo { get; private set; }
 
-        public string CurrentBranchName => this.GitRepo.Head.FriendlyName;
+        public Repository? GitRepo { get; private set; }
+
+        public RemoteRepo? RemoteRepo { get; set; }
+
+        public string? CurrentBranchName => GitRepo?.Head.FriendlyName;
 
         public bool IsAMainBranch => MainBranchNames.Contains(CurrentBranchName);
 
         public bool IsInLocalBranch => !CurrentBranchName.IsIn(MainBranchNames);
 
-        public int LocalBranchCount => GitRepo.Branches.Count(b => !b.IsRemote && !b.FriendlyName.IsIn(MainBranchNames));
+        public int LocalBranchCount => GitRepo?.Branches.Count(b => !b.IsRemote && !b.FriendlyName.IsIn(MainBranchNames)) ?? 0;
 
-        public int RemoteBranchCount => GitRepo.Branches.Count(b => b.IsRemote);
+        public int RemoteBranchCount => GitRepo?.Branches.Count(b => b.IsRemote) ?? 0;
 
-        public int StashCount => GitRepo.Stashes.Count();
+        public int StashCount => GitRepo?.Stashes.Count() ?? 0;
 
-        public int LocalChangesCount => this.GitRepo
+        public int LocalChangesCount => GitRepo?
             .RetrieveStatus(new StatusOptions
             {
                 IncludeUntracked = true,
@@ -37,60 +40,56 @@ namespace BbGit.Git
                 ExcludeSubmodules = true,
                 Show = StatusShowOption.WorkDirOnly
             })
-            .Count(s => s.State != FileStatus.Ignored);
-
-        public RemoteRepo RemoteRepo { get; set; }
+            .Count(s => s.State != FileStatus.Ignored) ?? 0;
 
         public LocalRepo(string fullPath, RemoteRepo remoteRepo)
         {
-            this.FullPath = fullPath;
-            this.Name = new DirectoryInfo(this.FullPath).Name;
-            this.RemoteRepo = remoteRepo;
-            this.SetGitRepo();
+            FullPath = fullPath;
+            Name = new DirectoryInfo(FullPath).Name;
+            RemoteRepo = remoteRepo;
+            SetGitRepo();
         }
 
         /// <summary>private because it doesn't make sense to provide both</summary>
-        public LocalRepo(string fullPath, Func<LocalRepo, RemoteRepo> getRemote)
+        public LocalRepo(string fullPath, Func<LocalRepo, RemoteRepo?> getRemote)
         {
-            this.FullPath = fullPath;
-            this.Name = new DirectoryInfo(this.FullPath).Name;
-            if (this.SetGitRepo())
+            FullPath = fullPath;
+            Name = new DirectoryInfo(FullPath).Name;
+            if (SetGitRepo())
             {
-                this.RemoteRepo = getRemote(this);
+                RemoteRepo = getRemote(this);
             }
         }
 
         public void Dispose()
         {
-            if (this.isDisposing)
+            if (_isDisposing)
             {
                 return;
             }
 
             lock (this)
             {
-                if (this.isDisposing || this.GitRepo == null)
+                if (_isDisposing)
                 {
                     return;
                 }
 
-                this.isDisposing = true;
-
-                this.GitRepo.Dispose();
-                this.GitRepo = null;
+                _isDisposing = true;
+                GitRepo?.Dispose();
             }
         }
 
         /// <summary>Evaluates if the local repo exists and if so, updates related properties</summary>
         public bool SetGitRepo()
         {
-            this.Exists = Directory.Exists(this.FullPath);
-            if (this.Exists)
+            Exists = Directory.Exists(FullPath);
+            if (Exists)
             {
-                this.IsGitDir = IsGitDirectory(this.FullPath);
-                if (this.IsGitDir)
+                IsGitDir = IsGitDirectory(FullPath);
+                if (IsGitDir)
                 {
-                    this.GitRepo ??= new Repository(this.FullPath);
+                    GitRepo ??= new Repository(FullPath);
                     return true;
                 }
             }
@@ -114,7 +113,7 @@ namespace BbGit.Git
         /// <inheritdoc />
         public override string ToString()
         {
-            return this.Name;
+            return Name;
         }
     }
 }

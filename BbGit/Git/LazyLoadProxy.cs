@@ -4,40 +4,38 @@ namespace BbGit.Git
 {
     public class LazyLoadProxy<T>
     {
-        private T value;
-        private Func<T> valueProvider;
+        private T? _value;
+        private Func<T>? _valueProvider;
 
-        public T Value
+        public T? Value
         {
             get
             {
-                if (this.valueProvider != null)
+                if (_valueProvider != null)
                 {
-                    this.value = this.valueProvider();
-                    this.valueProvider = null;
+                    _value = _valueProvider();
+                    _valueProvider = null;
                 }
 
-                return this.value;
+                return _value;
             }
             set
             {
-                this.value = value;
-                this.valueProvider = null;
+                _value = value;
+                _valueProvider = null;
             }
         }
-
-        /// <inheritdoc />
+        
         private LazyLoadProxy()
         {
         }
-
-        /// <inheritdoc />
+        
         public LazyLoadProxy(Func<T> valueProvider)
         {
-            this.valueProvider = valueProvider;
+            _valueProvider = valueProvider;
         }
 
-        public static implicit operator T(LazyLoadProxy<T> lazy)
+        public static implicit operator T?(LazyLoadProxy<T> lazy)
         {
             return lazy.Value;
         }

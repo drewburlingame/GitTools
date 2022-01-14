@@ -75,7 +75,8 @@ namespace BbGit.ConsoleApp
                 var repoPairs = localRepos.PairRepos(remoteRepos, mustHaveRemote: true).Values;
 
                 var remoteRepoCounts = repoPairs
-                    .GroupBy(p => p.Remote.ProjectKey)
+                    .Where(p => p.Remote is not null)
+                    .GroupBy(p => p.Remote!.ProjectKey)
                     .ToDictionary(
                         g => g.Key,
                         g => new { remote = g.Count(), local = g.Count(r => r.Local is not null) });
@@ -160,17 +161,17 @@ namespace BbGit.ConsoleApp
             if (outputNames)
             {
                 repoPairs
-                    .OrderBy(p => p.Remote.Description)
-                    .Select(p => p.Remote.Name)
+                    .OrderBy(p => p.Remote!.Description)
+                    .Select(p => p.Remote!.Name)
                     .ForEach(console.WriteLine);
             }
             else
             {
                 var rows = repoPairs
-                    .OrderBy(p => p.Remote.Description)
+                    .OrderBy(p => p.Remote!.Description)
                     .Select(p => new
                     {
-                        p.Remote.Name,
+                        p.Remote!.Name,
                         p.Remote.ProjectKey,
                         Cloned = p.Local is not null,
                         p.Remote.Public,
