@@ -19,6 +19,6 @@ namespace BbGit.ConsoleApp
 
     public class DryRunArgs : IArgumentModel
     {
-        [Option("dryrun")] public bool Dryrun { get; set; } = false;
+        [Option("dryrun")] public bool IsDryRun { get; set; } = false;
     }
 }

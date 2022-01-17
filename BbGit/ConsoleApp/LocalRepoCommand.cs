@@ -43,7 +43,7 @@ namespace BbGit.ConsoleApp
             bool withLocalChanges = false,
             [Option('s', Description = "with stashes")]
             bool withLocalStashes = false,
-            [Option('r', Description = "treat options:b,w,s as `OR` instead of `AND`")]
+            [Option("or", Description = "treat options:b,w,s as `OR` instead of `AND`")]
             bool orLocalChecks = false,
             [Option('d', Description = "has no remote repo")]
             bool noRemote = false,

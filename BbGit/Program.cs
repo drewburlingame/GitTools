@@ -32,7 +32,7 @@ namespace BbGit
             {
                 var configs = AppConfigs.Load();
 
-                var appRunner = new AppRunner<GitApplication>()
+                var appRunner = new AppRunner<GitApplication>(new AppSettings { Arguments = {DefaultOptionSplit = ',', DefaultPipeTargetSymbol = "^"}})
                     .UseDefaultMiddleware()
                     .GiveCancellationTokenToFlurl()
                     .Configure(c => c.UseParameterResolver(_ => AnsiConsole.Console))
