@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using BbGit.Framework;
 using BbGit.Git;
@@ -27,10 +28,10 @@ namespace BbGit.ConsoleApp
             IAnsiConsole console, CancellationToken cancellationToken,
             TableFormatModel tableFormatModel,
             ProjOrRepoKeys projOrRepoKeys,
-            [Option('n', Description = "regex to match name")]
-            string? namePattern,
-            [Option("branch", Description = "return only with the branch name")]
-            string? branchPattern,
+            [Option('n', Description = "regex to match name. Prefix with $! for NOT matching.")]
+            Regex? namePattern,
+            [Option("branch", Description = "return only with the branch name. Prefix with $! for NOT matching.")]
+            Regex? branchPattern,
             [Option('o', null, Description = "output only repo names")]
             bool outputNames = false,
             [Option("opk", Description = "output only project keys")]

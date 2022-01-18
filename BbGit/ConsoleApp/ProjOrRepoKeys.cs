@@ -5,20 +5,19 @@ namespace BbGit.ConsoleApp
 {
     public class ProjOrRepoKeys : IArgumentModel
     {
-        [Option('p', Description = "When specified, the inputs are parsed as project keys instead of repository names")]
-        public bool UseProjKeys { get; set; }
+        [Option('p', DescriptionLines = new[]{
+            "Keys of projects to use.",
+            "  Use $* to populate from piped input.",
+            "  Mutually exclusive with --repos."
+        })]
+        public IEnumerable<string>?  Projects { get; set; }
 
-        [Operand("inputs", 
-            Description = "The repository names or project keys to use in the command. Assumes repository unless -p is specified")]
-        public IEnumerable<string>? Inputs { get; set; }
-        
-        public IEnumerable<string>? GetProjKeysOrNull() => UseProjKeys ? Inputs : null;
-
-        public IEnumerable<string>? GetRepoKeysOrNull() => !UseProjKeys ? Inputs : null;
-    }
-
-    public class DryRunArgs : IArgumentModel
-    {
-        [Option("dryrun")] public bool IsDryRun { get; set; } = false;
+        [Option('r',
+            DescriptionLines =  new []{
+            "Keys of repos to use.",
+            "  Use $* to populate from piped input.",
+            "  Mutually exclusive with --projects."
+        })]
+        public IEnumerable<string>? Repos { get; set; }
     }
 }

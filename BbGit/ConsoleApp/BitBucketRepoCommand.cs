@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using BbGit.BitBucket;
@@ -42,12 +43,12 @@ namespace BbGit.ConsoleApp
                 "for regex flags, see https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-options")]
         public int Proj(IAnsiConsole console, CancellationToken cancellationToken,
             TableFormatModel tableFormatModel,
-            [Option('k', Description = "regex to match key")]
-            string? keyPattern,
-            [Option('n', Description = "regex to match name")]
-            string? namePattern,
-            [Option('d', Description = "regex to match description")]
-            string? descPattern,
+            [Option('k', Description = "regex to match key. Prefix with $! for NOT matching.")]
+            Regex? keyPattern,
+            [Option('n', Description = "regex to match name. Prefix with $! for NOT matching.")]
+            Regex? namePattern,
+            [Option('d', Description = "regex to match description. Prefix with $! for NOT matching.")]
+            Regex? descPattern,
             [Option('o', null, Description = "output only keys")]
             bool outputKeys = false)
         {
@@ -110,10 +111,10 @@ namespace BbGit.ConsoleApp
             IAnsiConsole console, CancellationToken cancellationToken, 
             TableFormatModel tableFormatModel,
             ProjOrRepoKeys projOrRepoKeys,
-            [Option('n', Description = "regex to match name")]
-            string? namePattern,
-            [Option('d', Description = "regex to match description")]
-            string? descPattern,
+            [Option('n', Description = "regex to match name. Prefix with $! for NOT matching.")]
+            Regex? namePattern,
+            [Option('d', Description = "regex to match description. Prefix with $! for NOT matching.")]
+            Regex? descPattern,
             [Option('o', null, Description = "output only names")]
             bool outputNames = false,
             [Option('c', Description = "return only cloned")]
@@ -136,8 +137,8 @@ namespace BbGit.ConsoleApp
                 throw new ArgumentException("cannot request both public and private");
             }
 
-            var projKeys = projOrRepoKeys.GetProjKeysOrNull()?.ToHashSet();
-            var repoKeys = projOrRepoKeys.GetRepoKeysOrNull()?.ToHashSet();
+            var projKeys = projOrRepoKeys.Projects?.ToHashSet();
+            var repoKeys = projOrRepoKeys.Repos?.ToHashSet();
 
             var projects = _bbService
                 .GetProjects()

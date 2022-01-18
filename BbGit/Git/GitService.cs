@@ -143,8 +143,8 @@ namespace BbGit.Git
 
         public DisposableCollection<LocalRepo> GetLocalRepos(ProjOrRepoKeys projOrRepoKeys)
             => GetLocalRepos(
-                projOrRepoKeys.GetProjKeysOrNull()?.ToCollection(),
-                projOrRepoKeys.GetRepoKeysOrNull()?.ToCollection());
+                projOrRepoKeys.Projects?.ToCollection(),
+                projOrRepoKeys.Repos?.ToCollection());
 
         public DisposableCollection<LocalRepo> GetLocalRepos(ICollection<string>? onlyProjKeys = null, ICollection<string>? onlyRepoNames = null)
         {

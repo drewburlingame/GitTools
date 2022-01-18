@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Autofac;
 using BbGit.BitBucket;
@@ -12,6 +13,7 @@ using CommandDotNet.Diagnostics;
 using CommandDotNet.Execution;
 using CommandDotNet.IoC.Autofac;
 using CommandDotNet.NameCasing;
+using CommandDotNet.TypeDescriptors;
 using LibGit2Sharp;
 using LibGit2Sharp.Handlers;
 using Spectre.Console;
@@ -32,7 +34,23 @@ namespace BbGit
             {
                 var configs = AppConfigs.Load();
 
-                var appRunner = new AppRunner<GitApplication>(new AppSettings { Arguments = {DefaultOptionSplit = ',', DefaultPipeTargetSymbol = "^"}})
+                var appSettings = new AppSettings
+                {
+                    Arguments = {DefaultOptionSplit = ',', DefaultPipeTargetSymbol = "$*"},
+                    ArgumentTypeDescriptors =
+                    {
+                        new DelegatedTypeDescriptor<Regex>("regex", p =>
+                        {
+                            // make it easier to specify NOT matching
+                            if (p.StartsWith("$!"))
+                            {
+                                p = $"^((?!{p.Substring(2)}).)*$";
+                            }
+                            return new Regex(p, RegexOptions.Compiled);
+                        })
+                    }
+                };
+                var appRunner = new AppRunner<GitApplication>(appSettings)
                     .UseDefaultMiddleware()
                     .GiveCancellationTokenToFlurl()
                     .Configure(c => c.UseParameterResolver(_ => AnsiConsole.Console))
